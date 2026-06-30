@@ -1,0 +1,45 @@
+{
+  "name": "مدارس ليسيه الحريه – توزيع الأعباء",
+  "short_name": "ليسيه الحريه",
+  "description": "نظام توزيع الأعباء التدريسية 2026/2027",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d1b2a",
+  "theme_color": "#0d1b2a",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": [
+    "education",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "المعلمون",
+      "short_name": "معلمون",
+      "description": "إدارة بيانات المعلمين",
+      "url": "./index.html#teachers"
+    },
+    {
+      "name": "النتائج",
+      "short_name": "نتائج",
+      "description": "عرض نتائج التوزيع",
+      "url": "./index.html#results"
+    }
+  ]
+}
