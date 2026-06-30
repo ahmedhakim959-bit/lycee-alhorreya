@@ -4,15 +4,12 @@
   "description": "نظام توزيع الأعباء التدريسية 2026/2027",
   "start_url": "./index.html",
   "display": "standalone",
-  "orientation": "any",
+  "orientation": "portrait",
   "background_color": "#0d1b2a",
   "theme_color": "#0d1b2a",
   "lang": "ar",
   "dir": "rtl",
-  "categories": [
-    "education",
-    "productivity"
-  ],
+  "categories": ["education", "productivity"],
   "icons": [
     {
       "src": "icon-192.png",

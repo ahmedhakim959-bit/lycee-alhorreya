@@ -1,5 +1,5 @@
 // SW v17.87
-const CACHE = 'lycee-v17.96';
+const CACHE = 'lycee-v18.05';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
