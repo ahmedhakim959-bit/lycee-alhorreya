@@ -1126,21 +1126,31 @@ async function doLogin(){
   const h=await _hashPwd(pwd);
   if(h===PWD_HASH){
     _ENC_KEY=pwd+'_lycee_salt_2026';
-    // الاتصال بقاعدة البيانات (Firestore) قبل عرض التطبيق
+    // الاتصال بقاعدة البيانات (Firestore) — بس مش شرط نوقف لو النت مقطوع
     const loginBtn=document.querySelector('#loginScreen button');
     const origLabel=loginBtn?loginBtn.textContent:'';
-    if(loginBtn){loginBtn.textContent='⏳ جاري الاتصال بقاعدة البيانات...';loginBtn.disabled=true;}
-    try{
-      await fbAuth.signInWithEmailAndPassword(FIREBASE_SERVICE_EMAIL, FIREBASE_SERVICE_PW);
-    }catch(dbErr){
-      if(loginBtn){loginBtn.textContent=origLabel;loginBtn.disabled=false;}
-      alert('❌ تعذر الاتصال بقاعدة البيانات: '+dbErr.message+'\n\nتأكد من اتصال الإنترنت وحاول تاني. لو المشكلة استمرت، البيانات ممكن ما تكونش محدّثة.');
-      return;
+    let offlineMode=false;
+    if(!fbAuth.currentUser){
+      if(loginBtn){loginBtn.textContent='⏳ جاري الاتصال بقاعدة البيانات...';loginBtn.disabled=true;}
+      try{
+        await fbAuth.signInWithEmailAndPassword(FIREBASE_SERVICE_EMAIL, FIREBASE_SERVICE_PW);
+      }catch(dbErr){
+        if(loginBtn){loginBtn.textContent=origLabel;loginBtn.disabled=false;}
+        if(dbErr.code==='auth/network-request-failed'){
+          // النت مقطوع — كمّل بالبيانات المخزنة محليًا بدل ما توقف التطبيق تمامًا
+          offlineMode=true;
+        } else {
+          alert('❌ تعذر الاتصال بقاعدة البيانات: '+dbErr.message+'\n\nحاول تاني.');
+          return;
+        }
+      }
     }
+    if(loginBtn){loginBtn.textContent=origLabel;loginBtn.disabled=false;}
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('app').classList.add('on');
     await initApp();
-    logChange('login','المشرف','تسجيل دخول ناجح');
+    if(offlineMode) toast('📴 شغال أوفلاين دلوقتي — التعديلات هتتزامن لما النت يرجع');
+    logChange('login','المشرف','تسجيل دخول ناجح'+(offlineMode?' (أوفلاين)':''));
     const ds=document.getElementById('deptFilter');if(ds){S.departments.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;ds.appendChild(o);});}
   } else {
     const e=document.getElementById('loginErr');
