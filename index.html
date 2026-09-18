@@ -36,6 +36,30 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@200;300;400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<!-- Firebase (يستبدل localStorage — أضيفت في نقل بيانات سبتمبر 2026) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script>
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBf2cwrHOpQMWePbHWundLkgebfzjBdBwQ",
+  authDomain: "lycee-96242.firebaseapp.com",
+  projectId: "lycee-96242",
+  storageBucket: "lycee-96242.firebasestorage.app",
+  messagingSenderId: "1030098160166",
+  appId: "1:1030098160166:web:7532d7d5e13f0b5e0eb4e7"
+};
+// حساب Firebase الثابت اللي بيستخدمه التطبيق داخليًا للاتصال بقاعدة البيانات
+// (منفصل عن كلمة سر دخول التطبيق اللي بيكتبها المستخدم في شاشة تسجيل الدخول)
+const FIREBASE_SERVICE_EMAIL = 'ahmedhakim959@gmail.com';
+const FIREBASE_SERVICE_PW    = 'Lyc33_Adm1n#2026Wx';
+firebase.initializeApp(FIREBASE_CONFIG);
+const fbAuth = firebase.auth();
+const fbDb   = firebase.firestore();
+fbDb.enablePersistence({synchronizeTabs:true}).catch(function(e){
+  console.warn('[Firestore] Offline persistence not enabled:', e.code);
+});
+</script>
 <style>
 :root{
   --ink:#0d1b2a;--paper:#f4efe6;--cream:#e5ddd0;
@@ -1102,9 +1126,20 @@ async function doLogin(){
   const h=await _hashPwd(pwd);
   if(h===PWD_HASH){
     _ENC_KEY=pwd+'_lycee_salt_2026';
+    // الاتصال بقاعدة البيانات (Firestore) قبل عرض التطبيق
+    const loginBtn=document.querySelector('#loginScreen button');
+    const origLabel=loginBtn?loginBtn.textContent:'';
+    if(loginBtn){loginBtn.textContent='⏳ جاري الاتصال بقاعدة البيانات...';loginBtn.disabled=true;}
+    try{
+      await fbAuth.signInWithEmailAndPassword(FIREBASE_SERVICE_EMAIL, FIREBASE_SERVICE_PW);
+    }catch(dbErr){
+      if(loginBtn){loginBtn.textContent=origLabel;loginBtn.disabled=false;}
+      alert('❌ تعذر الاتصال بقاعدة البيانات: '+dbErr.message+'\n\nتأكد من اتصال الإنترنت وحاول تاني. لو المشكلة استمرت، البيانات ممكن ما تكونش محدّثة.');
+      return;
+    }
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('app').classList.add('on');
-    initApp();
+    await initApp();
     logChange('login','المشرف','تسجيل دخول ناجح');
     const ds=document.getElementById('deptFilter');if(ds){S.departments.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;ds.appendChild(o);});}
   } else {
@@ -1123,56 +1158,86 @@ function togglePw(){const i=document.getElementById('pwInput');i.type=i.type==='
 // ═══════════════════════════════════════════
 // STORAGE
 // ═══════════════════════════════════════════
-const STORAGE_KEY = 'lycee_liberte_data_v4';
+const STORAGE_KEY = 'lycee_liberte_data_v4'; // لسه مستخدم كنسخة احتياطية محلية (offline fallback) بس
+const FS_STATE_DOC = fbDb.collection('appState').doc('main');
+let _fsSaveInFlight = false, _fsSavePending = false;
+
+// ── الحفظ: بيكتب كل حاجة في Firestore (مستند واحد شامل)، وبيحتفظ بنسخة محلية مشفّرة كخط رجعة ──
 function saveState(){
+  // نسخة محلية فورية (خط رجعة لو النت اتقطع فجأة أثناء الكتابة لـ Firestore)
   try{ localStorage.setItem(STORAGE_KEY,_enc(JSON.stringify(S))); }catch(e){}
+  _queueFirestoreSave();
 }
-function loadState(){
+function _queueFirestoreSave(){
+  if(_fsSaveInFlight){ _fsSavePending=true; return; }
+  _fsSaveInFlight=true;
+  const snapshot=JSON.parse(JSON.stringify(S)); // لقطة ثابتة وقت الإرسال
+  FS_STATE_DOC.set({
+    data: snapshot,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedBy: (fbAuth.currentUser && fbAuth.currentUser.email) || 'unknown'
+  }).then(function(){
+    _fsSaveInFlight=false;
+    if(_fsSavePending){ _fsSavePending=false; _queueFirestoreSave(); }
+  }).catch(function(err){
+    _fsSaveInFlight=false;
+    // ⚠️ إصلاح الثغرة القديمة: فشل الحفظ لازم يظهر للمستخدم، مش يتكتم بصمت
+    toast('❌ فشل الحفظ في قاعدة البيانات! التعديل محفوظ محليًا بس مش متزامن. تأكد من النت.');
+    console.error('[Firestore] Save failed:', err);
+  });
+}
+
+// ── التحميل: أول مرة بياخد البيانات من مجموعات الاستيراد (teachers/staff/settings)،
+//    وبعد كده بيقرأ من المستند الموحّد appState/main ──
+async function loadState(){
   try{
-    // v4
-    const _s4=localStorage.getItem(STORAGE_KEY);
-    if(_s4){const _d4=_dec(_s4)||_s4; const p=JSON.parse(_d4);if(p.departments&&p.subjects&&p.teachers){
-      S.departments=p.departments; S.subjects=p.subjects; S.teachers=p.teachers;
-      if(p.subjectPrintOrder) S.subjectPrintOrder=p.subjectPrintOrder;
-      if(p.budgetMergeConfig)  S.budgetMergeConfig=p.budgetMergeConfig;
-      if(p.budgetSubjectOrder) S.budgetSubjectOrder=p.budgetSubjectOrder;
-      if(p.budgetNotes)        S.budgetNotes=p.budgetNotes;
-      if(p.timetableConfig)    S.timetableConfig=p.timetableConfig;
-      if(p.timetableTeacherSettings) S.timetableTeacherSettings=p.timetableTeacherSettings;
-      if(p.timetableSubjectSettings)  S.timetableSubjectSettings=p.timetableSubjectSettings;
-      if(p.timetableClassTeachers)  S.timetableClassTeachers=p.timetableClassTeachers||{};
-      if(p.timetableSubjColors)     S.timetableSubjColors=p.timetableSubjColors||{};
-      if(p.generatedTimetable)       S.generatedTimetable=p.generatedTimetable;
-      if(p.degrees)            S.degrees=p.degrees;
-      // ── الأقسام الإدارية: فحص الإصدار ──
-      if(p.staff && p.staffDataVersion===STAFF_DATA_VERSION){
-        // نفس الإصدار → استخدم بيانات localStorage (تحافظ على تعديلات المستخدم)
-        S.staff=p.staff;
-        if(p.staffSectionOrder) S.staffSectionOrder=p.staffSectionOrder;
-      } else {
-        // إصدار جديد أو لا يوجد → استخدم البيانات المدمجة الجديدة
-        S.staff=JSON.parse(JSON.stringify(_INITIAL_STAFF_RAW));
-        S.staffSectionOrder=[..._INITIAL_STAFF_ORDER];
-      }
-      S.staffDataVersion=STAFF_DATA_VERSION;
-      saveState(); return true;
-    }}
-    // migrate v3 → v4
-    const s3=localStorage.getItem('lycee_liberte_data_v3');
-    if(s3){const p=JSON.parse(s3);if(p.departments&&p.subjects&&p.teachers){
-      S.departments=p.departments; S.subjects=p.subjects; S.teachers=p.teachers;
-      if(p.staff) S.staff=p.staff;
-      saveState(); return true;
-    }}
-    // migrate v2 → v4
-    const s2=localStorage.getItem('lycee_liberte_data_v2');
-    if(s2){const p=JSON.parse(s2);if(p.departments&&p.subjects&&p.teachers){
-      S.departments=p.departments; S.subjects=p.subjects; S.teachers=p.teachers;
-      localStorage.removeItem('lycee_liberte_data_v2');
-      saveState(); return true;
-    }}
-  }catch(e){}
-  return false;
+    const stateSnap = await FS_STATE_DOC.get();
+    if(stateSnap.exists && stateSnap.data().data){
+      const p = stateSnap.data().data;
+      Object.assign(S, p);
+      return true;
+    }
+    // أول مرة: المستند الموحّد لسه مش موجود — نجمّع S من الـ Collections المستوردة
+    const [teachersSnap, staffSnap, settingsSnap] = await Promise.all([
+      fbDb.collection('teachers').orderBy(firebase.firestore.FieldPath.documentId()).get(),
+      fbDb.collection('staff').get(),
+      fbDb.collection('settings').doc('main').get()
+    ]);
+    if(teachersSnap.empty && !settingsSnap.exists){
+      return false; // مفيش بيانات مستوردة خالص — تطبيق جديد فعليًا
+    }
+    S.teachers = teachersSnap.docs.map(function(d){ const t=d.data(); delete t.nameSearchTokens; delete t.status; delete t.version; delete t.department; delete t.createdAt; delete t.updatedAt; return t; });
+    S.staff = {};
+    staffSnap.forEach(function(d){
+      const s=d.data();
+      if(!S.staff[s.department]) S.staff[s.department]=[];
+      S.staff[s.department].push({name:s.name, role:s.role, note:s.note});
+    });
+    if(settingsSnap.exists){
+      const st=settingsSnap.data();
+      Object.assign(S, st);
+    }
+    S.staffDataVersion = STAFF_DATA_VERSION;
+    await saveStateAsync(); // اكتب المستند الموحّد لأول مرة عشان المرة الجاية تحمّل منه مباشرة
+    return true;
+  }catch(e){
+    console.error('[Firestore] loadState failed:', e);
+    // خط رجعة أخير: النسخة المحلية القديمة لو موجودة (مثلاً لو النت مقطوع تمامًا)
+    try{
+      const _s4=localStorage.getItem(STORAGE_KEY);
+      if(_s4){const _d4=_dec(_s4)||_s4; const p=JSON.parse(_d4); if(p.departments&&p.subjects&&p.teachers){ Object.assign(S,p); toast('⚠️ اتحمّلت نسخة محلية قديمة (تعذّر الوصول لقاعدة البيانات)'); return true; } }
+    }catch(e2){}
+    return false;
+  }
+}
+// نسخة Promise من saveState تستخدم وقت التحميل الأول بس (عشان نستناها قبل ما نكمل)
+function saveStateAsync(){
+  const snapshot=JSON.parse(JSON.stringify(S));
+  return FS_STATE_DOC.set({
+    data: snapshot,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedBy: (fbAuth.currentUser && fbAuth.currentUser.email) || 'unknown'
+  });
 }
 
 // ═══════════════════════════════════════════
@@ -3232,8 +3297,8 @@ const DEFAULT_WEEKLY_BY_LEVEL = {
   }
 };
 
-function initApp(){
-  const loaded=loadState();
+async function initApp(){
+  const loaded=await loadState();
   if(!loaded){
     S.teachers=JSON.parse(JSON.stringify(INITIAL_TEACHERS_RAW));
     const deptSubjs={};S.teachers.forEach(t=>{(t.assignments||[]).forEach(a=>{if(!a.subject)return;if(!deptSubjs[a.dept])deptSubjs[a.dept]=new Set();deptSubjs[a.dept].add(a.subject);});});
