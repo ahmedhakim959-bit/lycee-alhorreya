@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>أداة نقل بيانات Lycee إلى Firestore</title>
+<style>
+  :root{--bg:#0f1115;--card:#171a21;--border:#2a2f3a;--text:#e8eaed;--muted:#9aa0aa;
+        --blue:#4c8bf5;--green:#34a853;--red:#ea4335;--yellow:#fbbc04}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',Tahoma,Arial,sans-serif;
+       padding:16px;max-width:640px;margin:0 auto;line-height:1.6}
+  h1{font-size:1.3rem;margin-bottom:4px}
+  h2{font-size:1.05rem;margin:0 0 10px;color:var(--blue)}
+  .sub{color:var(--muted);font-size:.85rem;margin-bottom:20px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+  .step-badge{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+              border-radius:50%;background:var(--blue);color:#fff;font-size:.8rem;font-weight:700;margin-left:8px}
+  label{display:block;font-size:.85rem;color:var(--muted);margin:10px 0 4px}
+  input[type=file],input[type=password],input[type=text],input[type=email]{
+    width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);
+    background:#0f1115;color:var(--text);font-size:.9rem}
+  button{width:100%;padding:12px;border:none;border-radius:8px;font-size:.95rem;font-weight:600;
+         cursor:pointer;margin-top:12px}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  .btn-primary{background:var(--blue);color:#fff}
+  .btn-danger{background:var(--red);color:#fff}
+  .btn-secondary{background:#2a2f3a;color:var(--text)}
+  .pill{display:inline-block;background:#232733;border-radius:6px;padding:4px 10px;font-size:.8rem;margin:2px}
+  .warn{background:#3a2f10;border:1px solid var(--yellow);color:var(--yellow);border-radius:8px;
+        padding:10px;font-size:.82rem;margin-top:10px}
+  .ok{background:#0f2e17;border:1px solid var(--green);color:#7fd99a;border-radius:8px;
+      padding:10px;font-size:.82rem;margin-top:10px}
+  .err{background:#3a1010;border:1px solid var(--red);color:#f5a6a0;border-radius:8px;
+       padding:10px;font-size:.82rem;margin-top:10px;white-space:pre-wrap;word-break:break-word}
+  pre{background:#0f1115;border:1px solid var(--border);border-radius:8px;padding:10px;
+      overflow-x:auto;font-size:.72rem;max-height:220px}
+  progress{width:100%;height:16px;border-radius:8px;margin-top:10px}
+  .hidden{display:none}
+  details summary{cursor:pointer;color:var(--muted);font-size:.8rem;margin-top:6px}
+  #diag{font-size:.7rem;color:#666;margin-top:20px;white-space:pre-wrap;word-break:break-word}
+</style>
+</head>
+<body>
+
+<h1>🗂️ أداة نقل بيانات Lycee إلى Firestore (v2)</h1>
+<div class="sub">كل حاجة بتحصل جوه المتصفح بتاعك بس — كلمة السر والبيانات متبعتش لأي سيرفر تاني غير Firebase نفسه.</div>
+
+<div class="card">
+  <h2><span class="step-badge">1</span> اختيار ملف النسخة الاحتياطية</h2>
+  <label>ملف الـ JSON (النسخة الاحتياطية الشاملة)</label>
+  <input type="file" id="fileInput" accept=".json">
+  <label>كلمة سر تسجيل الدخول للتطبيق (نفسها اللي بتستخدمها في الـ PWA)</label>
+  <input type="password" id="pwInput" placeholder="••••••••">
+  <button class="btn-primary" id="btnDecrypt">🔓 فك التشفير ومعاينة البيانات</button>
+  <div id="decryptResult"></div>
+</div>
+
+<div class="card hidden" id="previewCard">
+  <h2><span class="step-badge">2</span> معاينة قبل النقل (Dry-run)</h2>
+  <div id="previewCounts"></div>
+  <details>
+    <summary>عرض عينة من البيانات المحوّلة (أول معلم وأول موظف)</summary>
+    <pre id="sampleJson"></pre>
+  </details>
+  <div class="warn">راجع الأرقام فوق (230 معلم / 208 موظف / 28 قسم إداري متوقعين) قبل ما تكمل للخطوة الجاية.</div>
+</div>
+
+<div class="card hidden" id="fbCard">
+  <h2><span class="step-badge">3</span> الاتصال بـ Firebase</h2>
+  <label>apiKey</label><input type="text" id="fbApiKey" placeholder="AIzaSy...">
+  <label>authDomain</label><input type="text" id="fbAuthDomain" value="lycee-96242.firebaseapp.com">
+  <label>projectId</label><input type="text" id="fbProjectId" value="lycee-96242">
+  <label>storageBucket</label><input type="text" id="fbStorageBucket" value="lycee-96242.firebasestorage.app">
+  <label>messagingSenderId</label><input type="text" id="fbSenderId" placeholder="123456789">
+  <label>appId</label><input type="text" id="fbAppId" placeholder="1:123456789:web:...">
+  <label>الإيميل</label><input type="email" id="authEmail" placeholder="admin@example.com">
+  <label>كلمة السر</label><input type="password" id="authPw">
+  <button class="btn-secondary" id="btnSignIn">🔑 تسجيل الدخول لـ Firebase</button>
+  <div id="signInResult"></div>
+</div>
+
+<div class="card hidden" id="importCard">
+  <h2><span class="step-badge">4</span> النقل الفعلي</h2>
+  <div class="warn">الخطوة دي هتكتب فعليًا في Firestore.</div>
+  <button class="btn-danger" id="btnImport">🚀 ابدأ النقل الفعلي الآن</button>
+  <progress id="progressBar" value="0" max="100" class="hidden"></progress>
+  <div id="importResult"></div>
+</div>
+
+<div id="diag"></div>
+
+<!-- Firebase compat SDK: عادي <script> tags، مش ES modules، عشان يشتغل من صفحات content:// / file:// من غير مشاكل -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
+<script>
+function diag(msg){
+  document.getElementById('diag').textContent += msg + '\n';
+}
+window.addEventListener('error', function(e){
+  diag('❌ JS error: ' + e.message + ' (line ' + e.lineno + ')');
+});
+diag('الصفحة اتحملت. جاري التحقق من مكتبة Firebase...');
+diag('firebase defined? ' + (typeof firebase !== 'undefined'));
+
+function rc4(key, str) {
+  let s = [], j = 0, x, res = '';
+  for (let i = 0; i < 256; i++) s[i] = i;
+  for (let i = 0; i < 256; i++) {
+    j = (j + s[i] + key.charCodeAt(i % key.length)) % 256;
+    x = s[i]; s[i] = s[j]; s[j] = x;
+  }
+  let i = 0; j = 0;
+  for (let y = 0; y < str.length; y++) {
+    i = (i + 1) % 256; j = (j + s[i]) % 256; x = s[i]; s[i] = s[j]; s[j] = x;
+    res += String.fromCharCode(str.charCodeAt(y) ^ s[(s[i] + s[j]) % 256]);
+  }
+  return res;
+}
+function decryptField(str, encKey) {
+  if (!str) return null;
+  if (!str.startsWith('ENC:')) return JSON.parse(str);
+  const raw = decodeURIComponent(escape(atob(str.slice(4))));
+  const dec = rc4(encKey, raw);
+  return JSON.parse(dec);
+}
+function searchTokens(name) {
+  return (name || '').split(/\s+/).filter(Boolean);
+}
+
+let transformed = null;
+let fbApp = null, fbDb = null;
+
+document.getElementById('btnDecrypt').addEventListener('click', async () => {
+  const fileEl = document.getElementById('fileInput');
+  const pw = document.getElementById('pwInput').value;
+  const resultEl = document.getElementById('decryptResult');
+  resultEl.innerHTML = '';
+  if (!fileEl.files.length) { resultEl.innerHTML = '<div class="err">اختر الملف الأول</div>'; return; }
+  if (!pw) { resultEl.innerHTML = '<div class="err">اكتب كلمة السر</div>'; return; }
+  try {
+    const text = await fileEl.files[0].text();
+    const backupRaw = JSON.parse(text);
+    const encKey = pw + '_lycee_salt_2026';
+    const mainKey = backupRaw['lycee_liberte_data_v4'] ? 'lycee_liberte_data_v4' : 'lycee_liberte_data_v3';
+    const S = decryptField(backupRaw[mainKey], encKey);
+    const archive = backupRaw['lycee_archive_v1'] ? JSON.parse(backupRaw['lycee_archive_v1']) : [];
+    const logs = backupRaw['lycee_log_v1'] ? JSON.parse(backupRaw['lycee_log_v1']) : [];
+    const warmstart = {};
+    Object.keys(backupRaw).forEach(k => {
+      let dept = null;
+      if (k.startsWith('lycee_warmstart_')) dept = k.slice('lycee_warmstart_'.length);
+      else if (k.startsWith('undefined')) dept = k.slice('undefined'.length);
+      if (dept && (S.departments || []).includes(dept)) {
+        try { warmstart[dept] = JSON.parse(backupRaw[k]); } catch (e) {}
+      }
+    });
+    const teachers = (S.teachers || []).map((t, i) => {
+      const id = 'TCH-' + String(i + 1).padStart(4, '0');
+      const department = t.primaryDept || (t.assignments && t.assignments[0] && t.assignments[0].dept) || '';
+      return {
+        id, name: t.name, degree: t.degree || '', loadType: t.loadType || 'fixed',
+        load: t.load || 0, assignments: t.assignments || [], note: t.note || '',
+        primaryDept: t.primaryDept || '', department,
+        status: 'active', version: 1, nameSearchTokens: searchTokens(t.name)
+      };
+    });
+    const staff = [];
+    let n = 0;
+    Object.entries(S.staff || {}).forEach(([dept, list]) => {
+      (list || []).forEach(s => {
+        n++;
+        staff.push({
+          id: 'STF-' + String(n).padStart(4, '0'),
+          name: s.name, role: s.role || '', department: dept, note: s.note || '',
+          status: 'active', version: 1, nameSearchTokens: searchTokens(s.name)
+        });
+      });
+    });
+    const archiveDocs = archive.map((a, i) => ({
+      id: 'ARC-' + String(i + 1).padStart(3, '0'),
+      year: a.year || '', teachersCount: a.teachers || 0, date: a.date || '',
+      snapshot: a.data ? JSON.parse(a.data) : null
+    }));
+    const logDocs = logs.map((l, i) => ({
+      id: 'LOG-' + String(i + 1).padStart(5, '0'),
+      type: l.type, name: l.name, detail: l.detail || '', time: l.time || ''
+    }));
+    const settings = {
+      departments: S.departments || [], subjects: S.subjects || {}, degrees: S.degrees || [],
+      timetableConfig: S.timetableConfig || {}, timetableTeacherSettings: S.timetableTeacherSettings || {},
+      timetableSubjectSettings: S.timetableSubjectSettings || {}, timetableClassTeachers: S.timetableClassTeachers || {},
+      timetableSubjColors: S.timetableSubjColors || {}, budgetMergeConfig: S.budgetMergeConfig || {},
+      budgetSubjectOrder: S.budgetSubjectOrder || {}, budgetNotes: S.budgetNotes || {},
+      staffSectionOrder: S.staffSectionOrder || [], subjectPrintOrder: S.subjectPrintOrder || []
+    };
+    transformed = { teachers, staff, archiveDocs, logDocs, warmstart, settings };
+    document.getElementById('previewCounts').innerHTML =
+      '<div class="pill">معلمين: ' + teachers.length + '</div>' +
+      '<div class="pill">موظفين: ' + staff.length + '</div>' +
+      '<div class="pill">أقسام إدارية: ' + Object.keys(S.staff || {}).length + '</div>' +
+      '<div class="pill">أقسام تدريس: ' + (S.departments || []).length + '</div>' +
+      '<div class="pill">Warm-start محفوظ: ' + Object.keys(warmstart).length + '</div>' +
+      '<div class="pill">أرشيف: ' + archiveDocs.length + '</div>' +
+      '<div class="pill">سجل تغييرات: ' + logDocs.length + '</div>';
+    document.getElementById('sampleJson').textContent =
+      JSON.stringify({ teacher: teachers[0], staff: staff[0] }, null, 2);
+    resultEl.innerHTML = '<div class="ok">✅ فك التشفير نجح والتحويل جاهز</div>';
+    document.getElementById('previewCard').classList.remove('hidden');
+    document.getElementById('fbCard').classList.remove('hidden');
+  } catch (e) {
+    resultEl.innerHTML = '<div class="err">❌ فشل فك التشفير — راجع كلمة السر أو الملف.\n' + (e && e.message) + '</div>';
+  }
+});
+
+document.getElementById('btnSignIn').addEventListener('click', function(){
+  const resultEl = document.getElementById('signInResult');
+  resultEl.innerHTML = '';
+  try {
+    if (typeof firebase === 'undefined') {
+      resultEl.innerHTML = '<div class="err">❌ مكتبة Firebase مش اتحملت. جرب تتأكد إن النت شغال وأعد فتح الصفحة.</div>';
+      return;
+    }
+    const cfg = {
+      apiKey: document.getElementById('fbApiKey').value,
+      authDomain: document.getElementById('fbAuthDomain').value,
+      projectId: document.getElementById('fbProjectId').value,
+      storageBucket: document.getElementById('fbStorageBucket').value,
+      messagingSenderId: document.getElementById('fbSenderId').value,
+      appId: document.getElementById('fbAppId').value
+    };
+    if (!fbApp) fbApp = firebase.initializeApp(cfg);
+    fbDb = firebase.firestore();
+    const email = document.getElementById('authEmail').value;
+    const pw = document.getElementById('authPw').value;
+    firebase.auth().signInWithEmailAndPassword(email, pw).then(function(){
+      resultEl.innerHTML = '<div class="ok">✅ تم تسجيل الدخول بنجاح</div>';
+      document.getElementById('importCard').classList.remove('hidden');
+    }).catch(function(e){
+      resultEl.innerHTML = '<div class="err">❌ فشل تسجيل الدخول: ' + e.code + ' — ' + e.message + '</div>';
+    });
+  } catch (e) {
+    resultEl.innerHTML = '<div class="err">❌ خطأ: ' + e.message + '</div>';
+  }
+});
+
+function writeInBatches(collectionName, docs, idField){
+  idField = idField || 'id';
+  const chunks = [];
+  for (let i = 0; i < docs.length; i += 400) chunks.push(docs.slice(i, i + 400));
+  let p = Promise.resolve();
+  chunks.forEach(function(chunk){
+    p = p.then(function(){
+      const batch = fbDb.batch();
+      chunk.forEach(function(d){
+        const ref = fbDb.collection(collectionName).doc(d[idField]);
+        const data = Object.assign({}, d);
+        delete data[idField];
+        data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+        data.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+        batch.set(ref, data);
+      });
+      return batch.commit();
+    });
+  });
+  return p;
+}
+
+document.getElementById('btnImport').addEventListener('click', function(){
+  const btn = document.getElementById('btnImport');
+  const resultEl = document.getElementById('importResult');
+  const bar = document.getElementById('progressBar');
+  btn.disabled = true; bar.classList.remove('hidden'); bar.value = 0;
+  resultEl.innerHTML = '';
+  const t = transformed;
+  bar.value = 10;
+  writeInBatches('teachers', t.teachers)
+    .then(function(){ bar.value = 35; return writeInBatches('staff', t.staff); })
+    .then(function(){ bar.value = 55; return writeInBatches('archive', t.archiveDocs); })
+    .then(function(){ bar.value = 65; return writeInBatches('logs', t.logDocs); })
+    .then(function(){
+      bar.value = 75;
+      const wsDocs = Object.entries(t.warmstart).map(function(e){ return Object.assign({id: e[0]}, e[1]); });
+      return writeInBatches('warmstart', wsDocs).then(function(){ return wsDocs.length; });
+    })
+    .then(function(wsCount){
+      bar.value = 90;
+      return fbDb.collection('settings').doc('main').set(Object.assign({}, t.settings, {
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      })).then(function(){ return wsCount; });
+    })
+    .then(function(wsCount){
+      bar.value = 100;
+      resultEl.innerHTML = '<div class="ok">✅ النقل خلص بنجاح!<br>معلمين: ' + t.teachers.length +
+        ' · موظفين: ' + t.staff.length + ' · أرشيف: ' + t.archiveDocs.length +
+        ' · سجل: ' + t.logDocs.length + ' · warm-start: ' + wsCount + ' · settings/main ✔️</div>';
+    })
+    .catch(function(e){
+      resultEl.innerHTML = '<div class="err">❌ حصل خطأ أثناء الكتابة: ' + e.message +
+        '<br>راجع الـ Security Rules في Firestore.</div>';
+    })
+    .finally(function(){ btn.disabled = false; });
+});
+</script>
+</body>
+</html>
