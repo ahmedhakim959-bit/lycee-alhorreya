@@ -42,7 +42,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script>
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyBf2cwrHOpQMWePbHWundLkgebfzjBdBwQ",
+  apiKey: "AIzaSyBbjzvSL7fcuBEhLzEqtu6tQrOLOCnT6rs",
   authDomain: "lycee-96242.firebaseapp.com",
   projectId: "lycee-96242",
   storageBucket: "lycee-96242.firebasestorage.app",
@@ -51,8 +51,7 @@ const FIREBASE_CONFIG = {
 };
 // حساب Firebase الثابت اللي بيستخدمه التطبيق داخليًا للاتصال بقاعدة البيانات
 // (منفصل عن كلمة سر دخول التطبيق اللي بيكتبها المستخدم في شاشة تسجيل الدخول)
-const FIREBASE_SERVICE_EMAIL = 'ahmedhakim959@gmail.com';
-const FIREBASE_SERVICE_PW    = 'Lyc33_Adm1n#2026Wx';
+// تسجيل الدخول بقاعدة البيانات بقى Anonymous — مفيش باسورد نخبيه في الكود
 firebase.initializeApp(FIREBASE_CONFIG);
 const fbAuth = firebase.auth();
 const fbDb   = firebase.firestore();
@@ -1133,7 +1132,7 @@ async function doLogin(){
     if(!fbAuth.currentUser){
       if(loginBtn){loginBtn.textContent='⏳ جاري الاتصال بقاعدة البيانات...';loginBtn.disabled=true;}
       try{
-        await fbAuth.signInWithEmailAndPassword(FIREBASE_SERVICE_EMAIL, FIREBASE_SERVICE_PW);
+        await fbAuth.signInAnonymously();
       }catch(dbErr){
         if(loginBtn){loginBtn.textContent=origLabel;loginBtn.disabled=false;}
         if(dbErr.code==='auth/network-request-failed'){
