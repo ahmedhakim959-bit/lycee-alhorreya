@@ -61,18 +61,20 @@ fbDb.enablePersistence({synchronizeTabs:true}).catch(function(e){
 </script>
 <style>
 :root{
-  --ink:#0d1b2a;--paper:#f4efe6;--cream:#e5ddd0;
-  --gold:#c8822a;--gold2:#e09830;--gold3:#fdf3e3;
+  /* لوحة الألوان الجديدة (2026) — أسماء المتغيرات القديمة اتسابت زي ما هي (gold, cream..)
+     عشان أي حاجة في الكود بتستخدمها متتأثرش، بس القيم اتغيرت للستايل الأزرق العصري الجديد */
+  --ink:#0d1b2a;--paper:#F5F6FA;--cream:#E7E9F0;
+  --gold:#3B6FE0;--gold2:#5C8AED;--gold3:#EAF1FE;
   --blue:#1a4a6e;--blue2:#2471a3;--blue3:#d6eaf8;
   --green:#1b5e35;--green2:#27ae60;--green3:#d5f5e3;
   --red:#7b1a1a;--red2:#c0392b;--red3:#fde8e8;
   --purple:#4a235a;--purple2:#8e44ad;
-  --sh:rgba(13,27,42,.13);
+  --sh:rgba(20,26,51,.10);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Cairo',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;
-  background-image:radial-gradient(ellipse at 15% 10%,rgba(200,130,42,.07) 0%,transparent 50%),
-  radial-gradient(ellipse at 85% 90%,rgba(26,74,110,.06) 0%,transparent 50%);}
+  background-image:radial-gradient(ellipse at 15% 10%,rgba(59,111,224,.05) 0%,transparent 50%),
+  radial-gradient(ellipse at 85% 90%,rgba(26,74,110,.05) 0%,transparent 50%);}
 
 #loginScreen{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
   background:linear-gradient(145deg,#071018 0%,#0f2238 45%,#071018 100%);}
@@ -105,30 +107,36 @@ body{font-family:'Cairo',sans-serif;background:var(--paper);color:var(--ink);min
 .login-err.show{display:block;animation:shake .4s;}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 
-#app{display:none;}#app.on{display:block;}
-header{background:var(--ink);padding:0 22px;display:flex;align-items:center;gap:12px;height:54px;
-  box-shadow:0 3px 18px var(--sh);position:sticky;top:0;z-index:200;}
+/* ══ الشكل العام الجديد: سايدبار جانبي بدل الشريط العلوي القديم ══
+   #app بقى flex-row (الشيل + المحتوى)؛ header و.nav بقوا جوه .app-shell عمودي.
+   كل الـ id/class القديمة اتسابت زي ما هي بالظبط، فمفيش أي سطر JS اتلمس. */
+#app{display:none;}#app.on{display:flex;flex-direction:row;height:100vh;overflow:hidden;}
+.app-shell{width:250px;flex-shrink:0;display:flex;flex-direction:column;background:var(--ink);
+  height:100vh;overflow-y:auto;box-shadow:2px 0 18px var(--sh);}
+.app-shell::-webkit-scrollbar{width:6px;}
+header{background:transparent;padding:18px 18px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+  box-shadow:none;position:static;border-bottom:1px solid rgba(255,255,255,.08);}
 .h-logo{width:34px;height:34px;background:linear-gradient(135deg,var(--gold),var(--gold2));
-  border-radius:8px;display:grid;place-items:center;font-size:15px;flex-shrink:0;}
+  border-radius:10px;display:grid;place-items:center;font-size:15px;flex-shrink:0;}
 .h-title{font-family:'Tajawal',sans-serif;font-size:.95rem;font-weight:700;color:#fff;}
 .h-title span{color:var(--gold);}
-.h-yr{font-size:.65rem;color:rgba(255,255,255,.38);margin-right:auto;}
+.h-yr{font-size:.65rem;color:rgba(255,255,255,.38);width:100%;order:5;}
 .logout-btn{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
   color:rgba(255,255,255,.6);border-radius:7px;padding:5px 11px;font-family:'Cairo',sans-serif;
   font-size:.74rem;cursor:pointer;transition:all .2s;}
 .logout-btn:hover{background:rgba(255,255,255,.14);color:#fff;}
 
-.nav{background:#111d2a;border-top:1px solid rgba(255,255,255,.05);padding:0 16px;
-  overflow-x:auto;display:flex;scrollbar-width:none;}
+.nav{background:transparent;border-top:none;padding:10px 12px;flex-direction:column;
+  overflow-x:visible;overflow-y:auto;display:flex;scrollbar-width:none;gap:2px;flex:1;}
 .nav::-webkit-scrollbar{display:none;}
-.nav-btn{flex-shrink:0;padding:9px 14px;border:none;background:none;
-  font-family:'Cairo',sans-serif;font-size:.78rem;font-weight:600;
-  color:rgba(255,255,255,.38);cursor:pointer;border-bottom:3px solid transparent;
-  margin-bottom:-1px;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:5px;}
-.nav-btn:hover{color:rgba(255,255,255,.7);}
-.nav-btn.active{color:#fff;border-bottom-color:var(--gold);}
+.nav-btn{flex-shrink:0;width:100%;text-align:right;padding:10px 14px;border:none;border-radius:10px;background:none;
+  font-family:'Cairo',sans-serif;font-size:.8rem;font-weight:600;
+  color:rgba(255,255,255,.5);cursor:pointer;border-right:3px solid transparent;
+  transition:all .2s;white-space:normal;display:flex;align-items:center;gap:8px;}
+.nav-btn:hover{color:#fff;background:rgba(255,255,255,.06);}
+.nav-btn.active{color:#fff;background:rgba(59,111,224,.18);border-right-color:var(--gold);}
 
-.main{max-width:1100px;margin:20px auto;padding:0 14px 60px;}
+.main{flex:1;max-width:none;margin:0;padding:24px 32px 60px;overflow-y:auto;height:100vh;box-sizing:border-box;}
 .page{display:none;}.page.active{display:block;}
 
 .card{background:#fff;border-radius:14px;box-shadow:0 5px 28px var(--sh);
@@ -435,6 +443,7 @@ textarea{resize:vertical;min-height:56px;}
 
 <!-- APP -->
 <div id="app">
+<div class="app-shell">
 <header>
   <div class="h-logo">🏫</div>
   <div><div class="h-title">مدارس <span>ليسيه الحريه</span></div></div>
@@ -456,6 +465,7 @@ textarea{resize:vertical;min-height:56px;}
   <button class="nav-btn" onclick="showPage('lessonGrid',this);if(!TT.lgDept)TT.lgDept=(S.departments||[])[0]||'';setTimeout(ttBuildLessonGridPage,100)">📋 Grid</button>
         <button class="nav-btn" onclick="showPage('timetable',this)">🗓️ الجداول</button>
 </div>
+</div><!-- /app-shell -->
 <div class="main">
 
 <!-- ══ SETUP PAGE ══ -->
