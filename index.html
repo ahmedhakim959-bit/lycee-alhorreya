@@ -8073,10 +8073,29 @@ function ttBuildResult(data,depts){
     var nc=0;(S.subjects[dept]||[]).forEach(function(s){nc=Math.max(nc,s.classes||0);});
     for(var c=0;c<nc;c++){var cid='cls_'+c;timetable[dept][cid]={};for(var d=0;d<m.nD;d++)timetable[dept][cid][d]={};}
   });
+  // ── ✅ إصلاح ثغرة أمان بيانات حقيقية: الكود القديم كان بيحسب "تعارضات=0" حتى لو معلم واحد
+  //    أو فصل واحد اتحط في حصتين وقت واحد بالظبط — لأنه كان بيتأكد بس من "الحصص اللي متحطتش"،
+  //    مش من "الحصص اللي اتحطت بس بتتصادم مع بعضها". دلوقتي بيتفحصوا الاتنين فعليًا. ──
+  var teacherUse={}; // key: teacher|day_period → index أول حصة احتلت الخانة دي
+  var clashLog=[];
   data.lessons.forEach(function(l,i){
     var a=data.assign[i];var cid='cls_'+l.cls;
     if(!timetable[l.dept]||!timetable[l.dept][cid]) return;
     if(a){
+      var slotKey=a.day+'_'+a.period;
+      if(timetable[l.dept][cid][a.day]&&timetable[l.dept][cid][a.day][a.period]){
+        var prevC=timetable[l.dept][cid][a.day][a.period];
+        clashLog.push({type:'class',dept:l.dept,cls:l.cls,day:a.day,period:a.period,subjA:prevC.subj,subjB:l.subj});
+      }
+      if(l.teacher){
+        var tk=l.teacher+'|'+slotKey;
+        if(teacherUse[tk]!==undefined){
+          var other=data.lessons[teacherUse[tk]];
+          clashLog.push({type:'teacher',teacher:l.teacher,day:a.day,period:a.period,deptA:other.dept,subjA:other.subj,deptB:l.dept,subjB:l.subj});
+        }else{
+          teacherUse[tk]=i;
+        }
+      }
       if(!timetable[l.dept][cid][a.day]) timetable[l.dept][cid][a.day]={};
       timetable[l.dept][cid][a.day][a.period]={subj:l.subj,teacher:l.teacher,teachers:l.teachers,isSplit:l.isSplit,splitGroups:l.isSplit?l.splitGroups:null};
     } else {
@@ -8085,7 +8104,17 @@ function ttBuildResult(data,depts){
       if(!fnd) conflicts[l.dept].push({cid:cid,subj:l.subj,cls:l.cls,rem:1,req:l.weekly||1});
     }
   });
-  return {timetable:timetable,conflicts:conflicts,generatedAt:new Date().toISOString()};
+  // ── تحويل التعارضات الحقيقية (معلم/فصل في مكانين وقت واحد) لعناصر واضحة، بدل ما تختفي بصمت ──
+  clashLog.forEach(function(cl){
+    var dept=cl.dept||cl.deptA;
+    if(!conflicts[dept])conflicts[dept]=[];
+    if(cl.type==='class'){
+      conflicts[dept].push({cid:'cls_'+cl.cls,subj:'⚠️ تعارض فصل حقيقي: "'+cl.subjA+'" و"'+cl.subjB+'" في نفس الخانة',cls:cl.cls,rem:1,req:1,realClash:true});
+    }else{
+      conflicts[dept].push({cid:'',subj:'⚠️ تعارض معلم حقيقي: "'+cl.teacher+'" في حصتين وقت واحد ('+cl.deptA+'/'+cl.subjA+' و'+cl.deptB+'/'+cl.subjB+')',cls:'',rem:1,req:1,realClash:true});
+    }
+  });
+  return {timetable:timetable,conflicts:conflicts,generatedAt:new Date().toISOString(),realClashCount:clashLog.length};
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -11896,7 +11925,7 @@ function ttStopGenIndicator(){
 }
 
 // ── تحسين عرض Progress ──
-var _origTtGenProg = (typeof ttGenProg==='function' && ttGenProg !== arguments.callee) ? ttGenProg : null;
+var _origTtGenProg = null; // ── ✅ إصلاح خطأ: كان بيستخدم arguments.callee خارج أي فنكشن (بيسبب ReferenceError عند تحميل الصفحة) ──
 function ttGenProg(pct, msg){
   if(_origTtGenProg && _origTtGenProg !== ttGenProg) _origTtGenProg(pct, msg);
   var bar = document.getElementById('ttGenProgBar');
