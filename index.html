@@ -135,6 +135,7 @@ header{background:transparent;padding:18px 18px 14px;display:flex;flex-wrap:wrap
   transition:all .2s;white-space:normal;display:flex;align-items:center;gap:8px;}
 .nav-btn:hover{color:#fff;background:rgba(255,255,255,.06);}
 .nav-btn.active{color:#fff;background:rgba(59,111,224,.18);border-right-color:var(--gold);}
+.mobile-bottom-nav{display:none;} /* تظهر بس على الموبايل — media query تحت */
 
 .main{flex:1;max-width:none;margin:0;padding:24px 32px 60px;overflow-y:auto;height:100vh;box-sizing:border-box;}
 .page{display:none;}.page.active{display:block;}
@@ -155,7 +156,22 @@ header{background:transparent;padding:18px 18px 14px;display:flex;flex-wrap:wrap
     white-space:nowrap;padding:9px 14px;}
   .nav-btn:hover{background:none;color:rgba(255,255,255,.7);}
   .nav-btn.active{background:none;border-bottom-color:var(--gold);border-right-color:transparent;}
-  .main{max-width:1100px;margin:20px auto;padding:0 14px 60px;height:auto;overflow-y:visible;flex:none;}
+  .main{max-width:1100px;margin:20px auto;padding:0 14px 92px;height:auto;overflow-y:visible;flex:none;}
+
+  /* شريط التنقل السفلي — للوصول السريع بالإبهام لأكتر 5 صفحات استخدامًا */
+  .mobile-bottom-nav{
+    display:flex;position:fixed;bottom:0;left:0;right:0;z-index:300;
+    background:var(--ink);box-shadow:0 -3px 18px var(--sh);
+    padding-bottom:env(safe-area-inset-bottom,0);
+  }
+  .mobile-bottom-nav .mbn-btn{
+    flex:1;width:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:2px;padding:8px 4px;font-size:1.05rem;border:none;border-radius:0;
+    border-bottom:none;margin:0;
+  }
+  .mobile-bottom-nav .mbn-btn span{font-size:.6rem;font-weight:600;color:rgba(255,255,255,.55);}
+  .mobile-bottom-nav .mbn-btn.active{background:rgba(59,111,224,.18);}
+  .mobile-bottom-nav .mbn-btn.active span{color:#fff;}
 }
 
 .card{background:#fff;border-radius:14px;box-shadow:0 5px 28px var(--sh);
@@ -485,6 +501,14 @@ textarea{resize:vertical;min-height:56px;}
         <button class="nav-btn" onclick="showPage('timetable',this)">🗓️ الجداول</button>
 </div>
 </div><!-- /app-shell -->
+<!-- شريط تنقل سفلي — يظهر بس على الموبايل (media query تحت) لأسهل وصول بالإبهام -->
+<nav class="mobile-bottom-nav">
+  <button class="nav-btn mbn-btn" onclick="showPage('dashboard',this)">🏠<span>الرئيسية</span></button>
+  <button class="nav-btn mbn-btn" onclick="showPage('teachers',this)">👩‍🏫<span>المعلمون</span></button>
+  <button class="nav-btn mbn-btn" onclick="showPage('staff',this)">🏢<span>الأقسام</span></button>
+  <button class="nav-btn mbn-btn" onclick="showPage('timetable',this)">🗓️<span>الجداول</span></button>
+  <button class="nav-btn mbn-btn active" onclick="showPage('setup',this)">⚙️<span>الإعداد</span></button>
+</nav>
 <div class="main">
 
 <!-- ══ SETUP PAGE ══ -->
@@ -546,6 +570,7 @@ textarea{resize:vertical;min-height:56px;}
         <button class="btn btn-ghost btn-sm" onclick="addTeacher()">+ إضافة معلم</button>
         <button class="btn btn-ghost btn-sm" onclick="document.getElementById('xlsxImportInput').click()" title="استيراد بيانات المعلمين من ملف Excel">📥 استيراد Excel</button>
         <button class="btn btn-ghost btn-sm" onclick="downloadTeachersTemplate()" title="تحميل قالب Excel الفارغ">📋 قالب Excel</button>
+        <button class="btn btn-ghost btn-sm" onclick="undoLastImport()" title="استرجاع البيانات لما كانت عليه قبل آخر عملية استيراد">↩️ تراجع عن آخر استيراد</button>
         <button class="btn btn-sm" style="background:linear-gradient(135deg,#0e7490,#0891b2);color:#fff;box-shadow:0 3px 8px rgba(8,145,178,.3)" onclick="openContractImport()" title="استيراد بيانات العاملين بالمكافأة من الملف المحمّل">📋 استيراد بالمكافأة</button>
         <input type="file" id="xlsxImportInput" accept=".xlsx,.xls" style="display:none" onchange="handleExcelImport(this)"/>
       </div>
@@ -1934,15 +1959,28 @@ function collectSubjects(){
     const existing=S.subjects[dept]||[];
     const result=[];
     const used=new Set();
+    const changes=[]; // ── لسجل التعديلات: نسجّل بس لو فيه فرق حقيقي ──
     existing.forEach(s=>{
       const key=normAr(s.name);
       if(domMap[key]){
-        result.push(domMap[key]); // قيم محدّثة، ترتيب محفوظ
+        const nv=domMap[key];
+        if(nv.classes!==s.classes || nv.weekly!==s.weekly){
+          changes.push(`${nv.name}: الفصول ${s.classes}→${nv.classes}، الحصص/أسبوع ${s.weekly}→${nv.weekly}`);
+        }
+        result.push(nv); // قيم محدّثة، ترتيب محفوظ
         used.add(key);
       }
     });
     // مواد جديدة أضيفت في صفحة الإعداد تُلحق في النهاية
-    Object.entries(domMap).forEach(([k,v])=>{ if(!used.has(k)) result.push(v); });
+    Object.entries(domMap).forEach(([k,v])=>{
+      if(!used.has(k)){
+        result.push(v);
+        changes.push(`مادة جديدة: ${v.name} (${v.classes} فصل، ${v.weekly} ح/أسبوع)`);
+      }
+    });
+    if(changes.length){
+      logChange('edit',`مواد قسم "${dept}"`,changes.join(' | '));
+    }
     S.subjects[dept]=result;
   });
 }
@@ -2690,6 +2728,34 @@ function clearLog(){
 // ═══════════════════════════════════════════
 // DASHBOARD
 // ═══════════════════════════════════════════
+function checkDataAnomalies(){
+  const alerts=[];
+  // 1) مادة عدد فصولها أعلى بشكل غير منطقي من باقي مواد نفس القسم (زي غلطة "8" بدل "1")
+  S.departments.forEach(dept=>{
+    const subs=(S.subjects[dept]||[]).filter(s=>s.name&&s.classes>0);
+    if(subs.length<2)return;
+    const avg=subs.reduce((s,x)=>s+x.classes,0)/subs.length;
+    subs.forEach(s=>{
+      if(s.classes>avg*3 && s.classes>=avg+4){
+        alerts.push(`"${s.name}" في قسم "${dept}": عدد الفصول (${s.classes}) أعلى بكتير من متوسط باقي مواد القسم (${avg.toFixed(1)}) — تأكد إنه رقم صحيح`);
+      }
+    });
+  });
+  // 2) أسماء مواد متقاربة جدًا لكن غير متطابقة (زي فرق "ال" التعريف)
+  const allNames=new Set();
+  S.departments.forEach(dept=>(S.subjects[dept]||[]).forEach(s=>{if(s.name)allNames.add(s.name);}));
+  const stripAl=n=>normAr(n).replace(/(^|\s)ال/g,'$1').replace(/\s+/g,' ').trim();
+  const arr=[...allNames];
+  for(let i=0;i<arr.length;i++){
+    for(let j=i+1;j<arr.length;j++){
+      if(normAr(arr[i])===normAr(arr[j]))continue; // نفس المادة أصلاً
+      if(stripAl(arr[i])===stripAl(arr[j])){
+        alerts.push(`"${arr[i]}" و"${arr[j]}" أسماء متقاربة جدًا — ممكن يكونوا نفس المادة اتكتبت بشكل مختلف`);
+      }
+    }
+  }
+  return alerts;
+}
 function buildDashboard(){
   collectSubjects();
   const body=document.getElementById('dashBody');
@@ -2713,9 +2779,14 @@ function buildDashboard(){
   });
   const covPct=totalSubs>0?Math.round(coveredSubs/totalSubs*100):0;
   const quotaPct=normals.length>0?Math.round(complete/normals.length*100):0;
+  const anomalies=checkDataAnomalies();
 
   // stats row
-  let html=`<div class="dash-grid">
+  let html=anomalies.length?`<div style="background:#fff3cd;border:1.5px solid #ffe69c;border-radius:12px;padding:14px 16px;margin-bottom:16px;">
+    <div style="font-weight:800;color:#856404;margin-bottom:6px;">🔍 تنبيهات بيانات محتملة (${anomalies.length}) — يُستحسن مراجعتها</div>
+    <div style="font-size:.78rem;color:#6b5300;line-height:1.9;">${anomalies.map(a=>`• ${a}`).join('<br>')}</div>
+  </div>`:'';
+  html+=`<div class="dash-grid">
     <div class="dash-card"><div class="dv" style="color:var(--blue)">${total}</div><div class="dl">إجمالي المعلمين</div></div>
     <div class="dash-card"><div class="dv" style="color:var(--green)">${complete}</div><div class="dl">مكتمل النصاب</div></div>
     <div class="dash-card"><div class="dv" style="color:var(--red2)">${deficit}</div><div class="dl">ناقص النصاب</div></div>
@@ -2762,6 +2833,31 @@ function buildDashboard(){
 // ═══════════════════════════════════════════
 // BACKUP / RESTORE / ARCHIVE
 // ═══════════════════════════════════════════
+// ── نسخة احتياطية صامتة (بدون تحميل ملف) قبل أي عملية استيراد قد تخرب البيانات ──
+function _autoPreImportSnapshot(label){
+  try{
+    saveState();
+    const SKIP_KEYS=new Set(['lycee_device_id','lycee_cloud_cfg','lycee_cloud_ts','lycee_cloud_last_ts','lycee_pre_import_snapshot']);
+    const snapshot={__meta__:{label,savedAt:new Date().toISOString()}};
+    for(let i=0;i<localStorage.length;i++){
+      const key=localStorage.key(i);
+      if(SKIP_KEYS.has(key))continue;
+      snapshot[key]=localStorage.getItem(key);
+    }
+    localStorage.setItem('lycee_pre_import_snapshot',JSON.stringify(snapshot));
+  }catch(e){ /* فشل النسخ الصامت لا يوقف عملية الاستيراد نفسها */ }
+}
+function undoLastImport(){
+  const raw=localStorage.getItem('lycee_pre_import_snapshot');
+  if(!raw){toast('⚠ لا توجد نسخة سابقة محفوظة للتراجع عنها');return;}
+  let snap;try{snap=JSON.parse(raw);}catch(e){toast('⚠ النسخة المحفوظة تالفة');return;}
+  const when=snap.__meta__?.savedAt?new Date(snap.__meta__.savedAt).toLocaleString('ar-EG'):'';
+  if(!confirm(`تراجع عن آخر استيراد (${snap.__meta__?.label||''} — محفوظ ${when})؟\nهيتم استبدال كل البيانات الحالية بالنسخة اللي كانت قبل الاستيراد.`))return;
+  Object.entries(snap).forEach(([k,v])=>{ if(k!=='__meta__') localStorage.setItem(k,v); });
+  localStorage.removeItem('lycee_pre_import_snapshot');
+  logChange('restore','تراجع عن استيراد',snap.__meta__?.label||'');
+  location.reload();
+}
 function backupData(){
   saveState();
   // المفاتيح الخاصة بالجهاز — لا تُنقل بين الأجهزة
@@ -3501,6 +3597,7 @@ function setAllAmbig(dept){
 
 function saveContractTeachers(){
   const rows=window._ctRows||[];
+  _autoPreImportSnapshot('استيراد بيانات المكافأة');
   const added=[];const errors=[];
   document.querySelectorAll('.ct-chk:not([disabled]):checked').forEach(chk=>{
     const ri=parseInt(chk.dataset.ri);
@@ -3542,6 +3639,7 @@ let tTimer;function toast(msg){const el=document.getElementById('toast');el.text
 function handleExcelImport(input){
   const file=input.files[0];if(!file)return;
   input.value=''; // reset so same file can be picked again
+  _autoPreImportSnapshot('استيراد Excel للمعلمين');
   const reader=new FileReader();
   reader.onload=function(e){
     try{
