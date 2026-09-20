@@ -336,6 +336,10 @@ textarea{resize:vertical;min-height:56px;}
 @keyframes tIn{from{opacity:0;transform:translate(-50%,7px)}to{opacity:1;transform:translate(-50%,0)}}
 
 .search-wrap{display:flex;gap:8px;align-items:center;margin-bottom:12px;}
+/* البحث الشامل في الهيدر بقى المكان الوحيد للكتابة — صناديق البحث القديمة دي بقت مخفية،
+   لكن عناصرها لسه موجودة في الـ DOM عشان الفلاتر التانية (المرحلة/القسم/الحالة) تفضل شغالة عادي */
+#page-teachers .search-wrap{display:none;}
+#staffSearch{display:none;}
 .search-wrap input{flex:1;min-width:180px;}
 .search-clear{background:var(--cream);border:1px solid #ccc;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:.8rem;}
 
@@ -3502,6 +3506,24 @@ let _gsrResults=[];
 function handleGlobalSearch(q){
   const box=document.getElementById('globalSearchResults');
   q=(q||'').trim();
+  const activePage=document.querySelector('.page.active')?.id?.replace('page-','');
+
+  // ── لو إنت أصلاً واقف في صفحة المعلمين أو الموظفين، البحث بقى فلترة مباشرة في نفس القائمة
+  // (مفيش داعي لصندوقين بحث منفصلين لنفس الغرض) ──
+  if(activePage==='teachers'){
+    const inp=document.getElementById('searchInput');
+    if(inp){inp.value=q;renderTeachersList();}
+    box.style.display='none';box.innerHTML='';_gsrResults=[];
+    return;
+  }
+  if(activePage==='staff'){
+    const inp=document.getElementById('staffSearch');
+    if(inp){inp.value=q;renderStaffPage();}
+    box.style.display='none';box.innerHTML='';_gsrResults=[];
+    return;
+  }
+
+  // ── في أي صفحة تانية: بحث شامل عبر كل شيء + قائمة نتائج تودّيك للمكان الصح ──
   if(q.length<2){box.style.display='none';box.innerHTML='';_gsrResults=[];return;}
   const nq=normAr(q);
   const results=[];
@@ -3519,7 +3541,7 @@ function handleGlobalSearch(q){
 
   // أقسام دراسية
   S.departments.forEach(d=>{
-    if(normAr(d).includes(nq)) results.push({type:'dept',icon:'📂',label:d,sub:'قسم دراسي',payload:d});
+    if(normAr(d).includes(nq)) results.push({type:'dept',icon:'📂',label:d,sub:'قسم دراسي — دوس لفلترة المعلمين حسب القسم ده',payload:d});
   });
 
   // مواد دراسية (من تعريفات الأقسام)
@@ -3527,7 +3549,7 @@ function handleGlobalSearch(q){
   S.departments.forEach(dept=>(S.subjects[dept]||[]).forEach(s=>{
     if(s.name&&normAr(s.name).includes(nq)){
       const key=dept+'|'+normAr(s.name);
-      if(!seenSub.has(key)){seenSub.add(key);results.push({type:'subject',icon:'📚',label:s.name,sub:`مادة — قسم: ${dept}`,payload:{dept,name:s.name}});}
+      if(!seenSub.has(key)){seenSub.add(key);results.push({type:'subject',icon:'📚',label:s.name,sub:`مادة — قسم: ${dept} — دوس عشان تشوف مين بيدرّسها`,payload:{dept,name:s.name}});}
     }
   }));
 
@@ -3570,8 +3592,19 @@ function jumpToGlobalResult(i){
   }else if(r.type==='staff'){
     showPage('staff',_gsrNavBtn('staff'));
     setTimeout(()=>{const inp=document.getElementById('staffSearch');if(inp){inp.value=r.payload;renderStaffPage();}},60);
-  }else{ // subject أو dept — النتائج بالقسم أوضح صفحة تجمعهم
-    showPage('results',_gsrNavBtn('results'));
+  }else if(r.type==='subject'){
+    // يودّيك لأداة "من يدرّس" بالقسم والمادة محددين جاهزين
+    showPage('teachers',_gsrNavBtn('teachers'));
+    setTimeout(()=>{
+      const deptSel=document.getElementById('sdDeptFilter');
+      if(deptSel){deptSel.value=r.payload.dept;onSdDeptChange();
+        setTimeout(()=>{const subjSel=document.getElementById('sdSubjFilter');if(subjSel){subjSel.value=r.payload.name;renderTeachersList();}},40);
+      }
+    },60);
+  }else if(r.type==='dept'){
+    // يودّيك لفلتر القسم في صفحة المعلمين مباشرة
+    showPage('teachers',_gsrNavBtn('teachers'));
+    setTimeout(()=>{const sel=document.getElementById('deptFilter');if(sel){sel.value=r.payload;renderTeachersList();}},60);
   }
 }
 document.addEventListener('click',function(e){
