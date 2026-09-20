@@ -146,9 +146,9 @@ header{background:transparent;padding:18px 18px 14px;display:flex;flex-wrap:wrap
 @media (max-width:880px){
   #app.on{display:block;height:auto;overflow:visible;}
   .app-shell{width:auto;height:auto;overflow:visible;box-shadow:none;background:transparent;display:block;}
-  header{background:var(--ink);padding:0 16px;flex-wrap:nowrap;align-items:center;gap:8px;
-    height:54px;box-shadow:0 3px 18px var(--sh);position:sticky;top:0;z-index:200;
-    border-bottom:none;overflow-x:auto;}
+  header{background:var(--ink);padding:8px 16px;flex-wrap:wrap;align-items:center;gap:8px;
+    height:auto;box-shadow:0 3px 18px var(--sh);position:sticky;top:0;z-index:200;
+    border-bottom:none;}
   .h-yr{width:auto;order:0;margin-right:auto;white-space:nowrap;}
   .nav{flex-direction:row;background:#111d2a;border-top:1px solid rgba(255,255,255,.05);
     padding:0 16px;overflow-x:auto;overflow-y:visible;flex:none;}
@@ -485,6 +485,16 @@ textarea{resize:vertical;min-height:56px;}
   <div class="h-yr">إدارة وسط – الإسكندرية | 2026/2027</div>
   <span id="appVersion" style="font-size:.58rem;color:rgba(255,255,255,.25);margin-right:4px">v18.05</span><!-- 20260629-123412 -->
   <button onclick="ttSafeHardRefresh()" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-family:Cairo,sans-serif;font-size:8pt;cursor:pointer;margin-left:6px" title="تحديث التطبيق">🔄 تحديث</button><button onclick="ttBackupData()" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-family:Cairo,sans-serif;font-size:7.5pt;cursor:pointer;margin-left:4px" title="تصدير نسخة احتياطية من البيانات">💾 نسخ احتياطي</button><button onclick="ttRestoreData()" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-family:Cairo,sans-serif;font-size:7.5pt;cursor:pointer;margin-left:4px" title="استعادة بيانات من ملف JSON">📂 استعادة</button><button class="logout-btn" onclick="doLogout()">🔒 خروج</button>
+  <div style="width:100%;position:relative;margin-top:8px;">
+    <input type="text" id="globalSearchInput" placeholder="🔎 بحث شامل: معلم، مادة، قسم، موظف..."
+      oninput="handleGlobalSearch(this.value)"
+      onfocus="if(this.value)handleGlobalSearch(this.value)"
+      style="width:100%;box-sizing:border-box;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.2);
+        background:rgba(255,255,255,.08);color:#fff;font-family:'Cairo',sans-serif;font-size:.8rem;"/>
+    <div id="globalSearchResults" style="display:none;position:absolute;top:100%;right:0;left:0;z-index:500;
+      background:#fff;border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.35);margin-top:4px;
+      max-height:340px;overflow-y:auto;"></div>
+  </div>
 </header>
 <div class="nav" id="navBar">
   <button class="nav-btn active" onclick="showPage('setup',this)">⚙️ الإعداد</button>
@@ -570,7 +580,7 @@ textarea{resize:vertical;min-height:56px;}
         <button class="btn btn-ghost btn-sm" onclick="addTeacher()">+ إضافة معلم</button>
         <button class="btn btn-ghost btn-sm" onclick="document.getElementById('xlsxImportInput').click()" title="استيراد بيانات المعلمين من ملف Excel">📥 استيراد Excel</button>
         <button class="btn btn-ghost btn-sm" onclick="downloadTeachersTemplate()" title="تحميل قالب Excel الفارغ">📋 قالب Excel</button>
-        <button class="btn btn-ghost btn-sm" onclick="undoLastImport()" title="استرجاع البيانات لما كانت عليه قبل آخر عملية استيراد">↩️ تراجع عن آخر استيراد</button>
+        <button class="btn btn-ghost btn-sm" onclick="undoLastImport()" title="استرجاع البيانات لما كانت عليه قبل آخر تعديل خطير">↩️ تراجع عن آخر تعديل</button>
         <button class="btn btn-sm" style="background:linear-gradient(135deg,#0e7490,#0891b2);color:#fff;box-shadow:0 3px 8px rgba(8,145,178,.3)" onclick="openContractImport()" title="استيراد بيانات العاملين بالمكافأة من الملف المحمّل">📋 استيراد بالمكافأة</button>
         <input type="file" id="xlsxImportInput" accept=".xlsx,.xls" style="display:none" onchange="handleExcelImport(this)"/>
       </div>
@@ -634,6 +644,7 @@ textarea{resize:vertical;min-height:56px;}
         <button class="btn btn-ghost btn-sm" onclick="buildResults()">🔄 تحديث</button>
         <button class="btn btn-ghost btn-sm" onclick="showExportBar()" title="تصدير التقرير إلى Excel">📤 تصدير Excel</button>
         <button class="btn btn-sm" style="background:linear-gradient(135deg,#6d28d9,#7c3aed);color:#fff;border:none" onclick="openPrintDeptModal()" title="طباعة تقرير قسم كامل">🖨️ طباعة قسم</button>
+        <button class="btn btn-sm" style="background:linear-gradient(135deg,#4c1d95,#6d28d9);color:#fff;border:none" onclick="if(confirm('طباعة تقرير كل الأقسام دفعة واحدة؟ ممكن ياخد شوية ثواني حسب عدد الأقسام.'))printAllDepartments()" title="طباعة تقرير كل الأقسام في ملف واحد">🖨️ طباعة الكل</button>
       </div>
     </div>
     <div id="exportBar" style="display:none;padding:12px 22px;background:#f8f5ef;border-bottom:2px solid var(--cream)">
@@ -1892,7 +1903,7 @@ document.getElementById('deptIn').addEventListener('keydown',function(e){
   if(e.key==='Enter'||e.key===','){e.preventDefault();addChip(this.value.trim());this.value='';}
 });
 function addChip(v){if(!v||S.departments.includes(v))return;S.departments.push(v);renderChips();saveState();}
-function removeChip(v){S.departments=S.departments.filter(d=>d!==v);renderChips();saveState();}
+function removeChip(v){if(!confirm(`حذف قسم "${v}" من الأقسام الدراسية؟\nلو فيه مواد أو معلمين مرتبطين بيه، بياناتهم مش هتتمسح لكن القسم هيختفي من القوائم.`))return;_autoPreImportSnapshot(`حذف قسم دراسي: ${v}`);S.departments=S.departments.filter(d=>d!==v);renderChips();saveState();}
 function renderChips(){
   const wrap=document.getElementById('deptChips'),inp=document.getElementById('deptIn');
   wrap.innerHTML=''; S.departments.forEach(d=>{const ch=document.createElement('div');ch.className='chip';ch.innerHTML=`${d}<button onclick="removeChip('${d.replace(/'/g,"\\'")}')">×</button>`;wrap.appendChild(ch);});
@@ -1928,7 +1939,14 @@ function buildSubjectGrid(){
     const deptLevel=getDeptLevel(dept);const lvlMap2=DEFAULT_WEEKLY_BY_LEVEL[deptLevel]||{};const existing=(S.subjects[dept]||[]).map(s=>({...s,weekly:s.weekly||lvlMap2[s.name]||DEFAULT_WEEKLY[s.name]||0}));
     if(!existing.length) existing.push({name:'',weekly:0,classes:0});
     const block=document.createElement('div');block.className='dept-block';
-    block.innerHTML=`<div class="dept-head">📂 ${dept}</div><div class="dept-body" id="sb-${encodeURIComponent(dept)}"></div>`;
+    block.innerHTML=`<div class="dept-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
+      <span>📂 ${dept}</span>
+      <span style="display:flex;gap:6px;flex-wrap:wrap">
+        <button type="button" style="font-size:.68rem;padding:4px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;cursor:pointer" onclick="bulkEditDeptSubjects('${dept.replace(/'/g,"\\'")}','classes')">✏️ فصول لكل المواد</button>
+        <button type="button" style="font-size:.68rem;padding:4px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;cursor:pointer" onclick="bulkEditDeptSubjects('${dept.replace(/'/g,"\\'")}','weekly')">✏️ حصص لكل المواد</button>
+        <button type="button" style="font-size:.68rem;padding:4px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;cursor:pointer" onclick="copySubjectsFromDept('${dept.replace(/'/g,"\\'")}')">📥 نسخ من قسم تاني</button>
+      </span>
+    </div><div class="dept-body" id="sb-${encodeURIComponent(dept)}"></div>`;
     grid.appendChild(block);
     const body=document.getElementById(`sb-${encodeURIComponent(dept)}`);
     existing.forEach(s=>addSubjRowTo(body,dept,s));
@@ -1941,6 +1959,49 @@ function addSubjRowTo(body,dept,sub){
   const addBtn=body.querySelector('.add-row-btn');const row=document.createElement('div');row.className='subj-row';const uid=Math.random().toString(36).slice(2,6);
   row.innerHTML=`<div style="grid-column:1/-1"><label>اسم المادة</label><input class="sn" data-dept="${dept}" data-uid="${uid}" type="text" placeholder="مثال: رياضيات" value="${sub.name||''}"/></div><div><label>حصص/أسبوع</label><input class="sw" data-uid="${uid}" type="number" min="0" max="30" value="${sub.weekly||''}"/></div><div><label>عدد الفصول</label><input class="sc" data-uid="${uid}" type="number" min="0" max="30" value="${sub.classes||''}"/></div><div style="grid-column:1/-1;text-align:left"><button class="del-x" onclick="this.closest('.subj-row').remove()">🗑 حذف</button></div>`;
   body.insertBefore(row,addBtn);
+}
+// ── تعديل جماعي: يحدّث نفس القيمة لكل مواد القسم دفعة واحدة (لسه محتاج حفظ بعدها) ──
+function bulkEditDeptSubjects(dept,field){
+  const label=field==='classes'?'عدد الفصول':'الحصص/أسبوع';
+  const val=prompt(`القيمة الجديدة لـ "${label}" لكل مواد قسم "${dept}":`);
+  if(val===null||val.trim()==='')return;
+  const num=field==='classes'?parseFloat(val):parseInt(val);
+  if(isNaN(num)||num<0){toast('⚠ رقم غير صالح');return;}
+  _autoPreImportSnapshot(`تعديل جماعي: ${label} — قسم "${dept}"`);
+  const selector=field==='classes'?'.sc':'.sw';
+  const rows=document.querySelectorAll(`.sn[data-dept="${dept}"]`);
+  let count=0;
+  rows.forEach(inp=>{
+    const uid=inp.dataset.uid;
+    const target=document.querySelector(`${selector}[data-uid="${uid}"]`);
+    if(target){target.value=num;count++;}
+  });
+  toast(`✅ اتحدّث "${label}" في ${count} مادة — متنساش تحفظ`);
+}
+// ── نسخ أسماء المواد + الحصص/أسبوع من قسم تاني (عدد الفصول بيتسيب فاضي، كل قسم فصوله مختلفة) ──
+function copySubjectsFromDept(targetDept){
+  const others=S.departments.filter(d=>d!==targetDept);
+  if(!others.length){toast('⚠ لا يوجد قسم آخر لتنسخ منه');return;}
+  const src=prompt(`انسخ المواد من أنهي قسم؟ (اكتب اسم القسم بالظبط زي ما هو تحت)\n\n${others.join('\n')}`);
+  if(!src||!src.trim())return;
+  const srcDept=others.find(d=>normAr(d)===normAr(src.trim()));
+  if(!srcDept){toast('⚠ اسم القسم غير مطابق لأي قسم موجود');return;}
+  const srcSubs=S.subjects[srcDept]||[];
+  if(!srcSubs.length){toast(`⚠ قسم "${srcDept}" مفيهوش مواد محفوظة بعد`);return;}
+  _autoPreImportSnapshot(`نسخ مواد من "${srcDept}" إلى "${targetDept}"`);
+  const body=document.getElementById(`sb-${encodeURIComponent(targetDept)}`);
+  if(!body){toast('⚠ حصل خطأ في تحديد القسم');return;}
+  const existingNames=new Set([...document.querySelectorAll(`.sn[data-dept="${targetDept}"]`)].map(inp=>normAr(inp.value.trim())).filter(Boolean));
+  let added=0,skipped=0;
+  srcSubs.forEach(s=>{
+    if(!s.name)return;
+    if(existingNames.has(normAr(s.name))){skipped++;return;}
+    addSubjRowTo(body,targetDept,{name:s.name,weekly:s.weekly||0,classes:0});
+    existingNames.add(normAr(s.name));
+    added++;
+  });
+  if(!added){toast(`⚠ كل مواد "${srcDept}" موجودة بالفعل في "${targetDept}"`);return;}
+  toast(`✅ اتنسخ ${added} مادة من "${srcDept}"${skipped?` (اتخطى ${skipped} موجودة بالفعل)`:''} — حدد عدد الفصول لكل مادة وبعدين احفظ`);
 }
 function collectSubjects(){
   S.departments.forEach(dept=>{
@@ -2323,7 +2384,7 @@ function saveTeacher(){
     toast(isNew?'✅ تم إضافة المعلم':'✅ تم تعديل البيانات');
   }
 }
-function deleteTeacher(i){const tname=S.teachers[i].name;if(!confirm(`حذف: ${tname}؟`))return;logChange('delete',tname,'تم حذف المعلم');S.teachers.splice(i,1);saveState();renderTeacherStats();renderTeachersList();toast('🗑 تم الحذف');}
+function deleteTeacher(i){const tname=S.teachers[i].name;if(!confirm(`حذف: ${tname}؟`))return;_autoPreImportSnapshot(`حذف معلم: ${tname}`);logChange('delete',tname,'تم حذف المعلم');S.teachers.splice(i,1);saveState();renderTeacherStats();renderTeachersList();toast('🗑 تم الحذف');}
 
 function moveTeacher(idx, dir){
   const newIdx=idx+dir;
@@ -2852,7 +2913,7 @@ function undoLastImport(){
   if(!raw){toast('⚠ لا توجد نسخة سابقة محفوظة للتراجع عنها');return;}
   let snap;try{snap=JSON.parse(raw);}catch(e){toast('⚠ النسخة المحفوظة تالفة');return;}
   const when=snap.__meta__?.savedAt?new Date(snap.__meta__.savedAt).toLocaleString('ar-EG'):'';
-  if(!confirm(`تراجع عن آخر استيراد (${snap.__meta__?.label||''} — محفوظ ${when})؟\nهيتم استبدال كل البيانات الحالية بالنسخة اللي كانت قبل الاستيراد.`))return;
+  if(!confirm(`تراجع عن آخر تعديل (${snap.__meta__?.label||''} — محفوظ ${when})؟\nهيتم استبدال كل البيانات الحالية بالنسخة اللي كانت قبل التعديل ده.`))return;
   Object.entries(snap).forEach(([k,v])=>{ if(k!=='__meta__') localStorage.setItem(k,v); });
   localStorage.removeItem('lycee_pre_import_snapshot');
   logChange('restore','تراجع عن استيراد',snap.__meta__?.label||'');
@@ -3177,8 +3238,105 @@ function doPrintDept(){
 
 function _openDeptPrintWindow(dept,opts){
   collectSubjects();
-  const subs=(S.subjects[dept]||[]).filter(s=>s.name);
   const dateStr=new Date().toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'});
+  const bodyHtml=_buildDeptReportBody(dept,opts,dateStr);
+  const html=_wrapPrintHtml(dept,bodyHtml,dateStr);
+  const w=window.open('','_blank','width=900,height=700');
+  if(!w){toast('⚠ السماح بالنوافذ المنبثقة في المتصفح');return;}
+  w.document.write(html);
+  w.document.close();
+}
+
+// ── طباعة كل الأقسام في تقرير واحد متصل، صفحة جديدة لكل قسم ──
+function printAllDepartments(){
+  collectSubjects();
+  if(!S.departments.length){toast('⚠ لا توجد أقسام');return;}
+  const opts={optNasab:true,optOther:true,optUncov:true,optNote:true};
+  const dateStr=new Date().toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'});
+  const allBody=S.departments.map((dept,di)=>
+    `<div${di>0?' style="page-break-before:always;"':''}>${_buildDeptReportBody(dept,opts,dateStr)}</div>`
+  ).join('');
+  const html=_wrapPrintHtml('كل الأقسام',allBody,dateStr);
+  const w=window.open('','_blank','width=900,height=700');
+  if(!w){toast('⚠ السماح بالنوافذ المنبثقة في المتصفح');return;}
+  w.document.write(html);
+  w.document.close();
+}
+
+function _wrapPrintHtml(title,bodyHtml,dateStr){
+  return `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>تقرير ${title} – مدارس ليسيه الحريه</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Cairo',Arial,sans-serif;direction:rtl;font-size:12px;color:#111;background:#fff;padding:18px 22px;}
+  /* ── ترويسة ── */
+  .report-header{text-align:center;margin-bottom:18px;padding-bottom:12px;border-bottom:3px solid #1a4a6e;}
+  .report-header h1{font-size:16px;font-weight:900;color:#1a4a6e;margin-bottom:2px;}
+  .report-header h2{font-size:13px;font-weight:700;color:#0e7490;}
+  .report-header .meta{font-size:10px;color:#888;margin-top:4px;}
+  /* ── ملخص القسم ── */
+  .summary-bar{display:flex;gap:12px;flex-wrap:wrap;background:#f0f4f8;border-radius:8px;padding:10px 14px;margin-bottom:16px;border:1px solid #d6e4f0;}
+  .sum-item{display:flex;flex-direction:column;align-items:center;min-width:80px;}
+  .sum-lbl{font-size:9.5px;color:#666;margin-bottom:2px;}
+  .sum-val{font-size:15px;font-weight:900;}
+  .sum-val.gold{color:#b7770d;} .sum-val.green{color:#166534;} .sum-val.red{color:#991b1b;}
+  .sum-val.blue{color:#1e3a8a;} .sum-val.warn{color:#856404;}
+  /* ── كتلة مادة ── */
+  .subj-block{margin-bottom:16px;}
+  .page-break-avoid{page-break-inside:avoid;}
+  .subj-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#1a4a6e;color:#fff;padding:7px 12px;border-radius:6px 6px 0 0;}
+  .subj-name{font-size:13px;font-weight:900;}
+  .subj-meta{font-size:10.5px;opacity:.85;}
+  /* ── جدول ── */
+  .rt{width:100%;border-collapse:collapse;font-size:11px;}
+  .rt thead tr{background:#e8f0fa;}
+  .rt th{padding:5px 8px;font-weight:700;font-size:10.5px;color:#1a4a6e;border:1px solid #c9d8ee;}
+  .rt td{padding:4px 8px;border:1px solid #dde6f0;vertical-align:middle;}
+  .rt tr.alt{background:#f7fafd;}
+  .rt tr.other-row td{background:#fafafa;}
+  .rt tr.total-row td{background:#e8f0fa;font-weight:700;}
+  .tl{text-align:right;} .tc{text-align:center;}
+  .bold{font-weight:700;} .blue{color:#1e3a8a;}
+  .ok{color:#166534;font-weight:700;} .err{color:#991b1b;font-weight:700;} .over{color:#1e3a8a;font-weight:700;}
+  /* ── شارات الحالة ── */
+  .tag{padding:2px 7px;border-radius:10px;font-size:9.5px;font-weight:700;margin-right:4px;}
+  .tag.ok{background:#dcfce7;color:#166534;} .tag.err{background:#fee2e2;color:#991b1b;}
+  .tag.over{background:#dbeafe;color:#1e3a8a;} .tag.warn{background:#fef9c3;color:#856404;}
+  /* ── رسائل فارغة ── */
+  .no-teacher{padding:8px 12px;color:#aaa;font-size:11px;font-style:italic;background:#fafafa;border:1px solid #eee;border-top:none;}
+  /* ── تذييل ── */
+  .report-footer{margin-top:20px;padding-top:8px;border-top:1px solid #ddd;display:flex;justify-content:space-between;font-size:9.5px;color:#aaa;}
+  /* ── طباعة ── */
+  @media print{
+    body{padding:10px 14px;}
+    .subj-block{page-break-inside:avoid;}
+    .summary-bar{border:1.5px solid #c9d8ee;}
+    @page{size:A4;margin:1.2cm 1cm;}
+  }
+</style>
+</head>
+<body>
+
+${bodyHtml}
+
+<div class="report-footer">
+  <span>مدارس ليسيه الحريه</span>
+  <span>توزيع الأعباء التدريسية 2025/2026</span>
+  <span>${dateStr}</span>
+</div>
+
+<script>window.onload=()=>{window.print();}<\/script>
+</body>
+</html>`;
+}
+
+function _buildDeptReportBody(dept,opts,dateStr){
+  collectSubjects();
+  const subs=(S.subjects[dept]||[]).filter(s=>s.name);
 
   // ── إحصاءات القسم ──
   let deptTotalReq=0,deptTotalAsgn=0,deptUncovCls=0;
@@ -3291,64 +3449,7 @@ function _openDeptPrintWindow(dept,opts){
       <div class="sum-item"><span class="sum-lbl">عدد المواد</span><span class="sum-val">${subs.length}</span></div>
     </div>`;
 
-  // ── بناء صفحة HTML كاملة ──
-  const html=`<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-<meta charset="UTF-8">
-<title>تقرير ${dept} – مدارس ليسيه الحريه</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Cairo',Arial,sans-serif;direction:rtl;font-size:12px;color:#111;background:#fff;padding:18px 22px;}
-  /* ── ترويسة ── */
-  .report-header{text-align:center;margin-bottom:18px;padding-bottom:12px;border-bottom:3px solid #1a4a6e;}
-  .report-header h1{font-size:16px;font-weight:900;color:#1a4a6e;margin-bottom:2px;}
-  .report-header h2{font-size:13px;font-weight:700;color:#0e7490;}
-  .report-header .meta{font-size:10px;color:#888;margin-top:4px;}
-  /* ── ملخص القسم ── */
-  .summary-bar{display:flex;gap:12px;flex-wrap:wrap;background:#f0f4f8;border-radius:8px;padding:10px 14px;margin-bottom:16px;border:1px solid #d6e4f0;}
-  .sum-item{display:flex;flex-direction:column;align-items:center;min-width:80px;}
-  .sum-lbl{font-size:9.5px;color:#666;margin-bottom:2px;}
-  .sum-val{font-size:15px;font-weight:900;}
-  .sum-val.gold{color:#b7770d;} .sum-val.green{color:#166534;} .sum-val.red{color:#991b1b;}
-  .sum-val.blue{color:#1e3a8a;} .sum-val.warn{color:#856404;}
-  /* ── كتلة مادة ── */
-  .subj-block{margin-bottom:16px;}
-  .page-break-avoid{page-break-inside:avoid;}
-  .subj-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#1a4a6e;color:#fff;padding:7px 12px;border-radius:6px 6px 0 0;}
-  .subj-name{font-size:13px;font-weight:900;}
-  .subj-meta{font-size:10.5px;opacity:.85;}
-  /* ── جدول ── */
-  .rt{width:100%;border-collapse:collapse;font-size:11px;}
-  .rt thead tr{background:#e8f0fa;}
-  .rt th{padding:5px 8px;font-weight:700;font-size:10.5px;color:#1a4a6e;border:1px solid #c9d8ee;}
-  .rt td{padding:4px 8px;border:1px solid #dde6f0;vertical-align:middle;}
-  .rt tr.alt{background:#f7fafd;}
-  .rt tr.other-row td{background:#fafafa;}
-  .rt tr.total-row td{background:#e8f0fa;font-weight:700;}
-  .tl{text-align:right;} .tc{text-align:center;}
-  .bold{font-weight:700;} .blue{color:#1e3a8a;}
-  .ok{color:#166534;font-weight:700;} .err{color:#991b1b;font-weight:700;} .over{color:#1e3a8a;font-weight:700;}
-  /* ── شارات الحالة ── */
-  .tag{padding:2px 7px;border-radius:10px;font-size:9.5px;font-weight:700;margin-right:4px;}
-  .tag.ok{background:#dcfce7;color:#166534;} .tag.err{background:#fee2e2;color:#991b1b;}
-  .tag.over{background:#dbeafe;color:#1e3a8a;} .tag.warn{background:#fef9c3;color:#856404;}
-  /* ── رسائل فارغة ── */
-  .no-teacher{padding:8px 12px;color:#aaa;font-size:11px;font-style:italic;background:#fafafa;border:1px solid #eee;border-top:none;}
-  /* ── تذييل ── */
-  .report-footer{margin-top:20px;padding-top:8px;border-top:1px solid #ddd;display:flex;justify-content:space-between;font-size:9.5px;color:#aaa;}
-  /* ── طباعة ── */
-  @media print{
-    body{padding:10px 14px;}
-    .subj-block{page-break-inside:avoid;}
-    .summary-bar{border:1.5px solid #c9d8ee;}
-    @page{size:A4;margin:1.2cm 1cm;}
-  }
-</style>
-</head>
-<body>
-
+  return `
 <div class="report-header">
   <h1>مدارس ليسيه الحريه – إدارة وسط التعليمية – الإسكندرية</h1>
   <h2>تقرير توزيع الأعباء التدريسية | ${dept}</h2>
@@ -3357,21 +3458,7 @@ function _openDeptPrintWindow(dept,opts){
 
 ${summaryHtml}
 ${subjBlocks||'<p style="color:#aaa;text-align:center;padding:24px">لا توجد مواد محددة لهذا القسم</p>'}
-
-<div class="report-footer">
-  <span>مدارس ليسيه الحريه</span>
-  <span>توزيع الأعباء التدريسية 2025/2026</span>
-  <span>${dateStr}</span>
-</div>
-
-<script>window.onload=()=>{window.print();}<\/script>
-</body>
-</html>`;
-
-  const w=window.open('','_blank','width=900,height=700');
-  if(!w){toast('⚠ السماح بالنوافذ المنبثقة في المتصفح');return;}
-  w.document.write(html);
-  w.document.close();
+`;
 }
 
 function hardRefreshApp(){
@@ -3407,6 +3494,93 @@ function showPage(name,btn){
   if(name==='log')buildLog();
   if(name==='timetable')buildTimetablePage();
 }
+
+// ═══════════════════════════════════════════
+// GLOBAL SEARCH — بحث شامل عبر المعلمين/المواد/الأقسام/الموظفين
+// ═══════════════════════════════════════════
+let _gsrResults=[];
+function handleGlobalSearch(q){
+  const box=document.getElementById('globalSearchResults');
+  q=(q||'').trim();
+  if(q.length<2){box.style.display='none';box.innerHTML='';_gsrResults=[];return;}
+  const nq=normAr(q);
+  const results=[];
+
+  // معلمون (بالاسم أو المادة اللي بيدرّسها)
+  S.teachers.forEach(t=>{
+    const nameMatch=normAr(t.name).includes(nq);
+    const subjHit=(t.assignments||[]).find(a=>normAr(a.subject||'').includes(nq));
+    if(nameMatch||subjHit){
+      results.push({type:'teacher',icon:'👩‍🏫',label:t.name,
+        sub:subjHit?`${subjHit.dept} — ${subjHit.subject}`:((t.assignments&&t.assignments[0])?t.assignments[0].dept:'معلم'),
+        payload:t.name});
+    }
+  });
+
+  // أقسام دراسية
+  S.departments.forEach(d=>{
+    if(normAr(d).includes(nq)) results.push({type:'dept',icon:'📂',label:d,sub:'قسم دراسي',payload:d});
+  });
+
+  // مواد دراسية (من تعريفات الأقسام)
+  const seenSub=new Set();
+  S.departments.forEach(dept=>(S.subjects[dept]||[]).forEach(s=>{
+    if(s.name&&normAr(s.name).includes(nq)){
+      const key=dept+'|'+normAr(s.name);
+      if(!seenSub.has(key)){seenSub.add(key);results.push({type:'subject',icon:'📚',label:s.name,sub:`مادة — قسم: ${dept}`,payload:{dept,name:s.name}});}
+    }
+  }));
+
+  // موظفون إداريون
+  Object.entries(S.staff||{}).forEach(([section,list])=>{
+    (list||[]).forEach(p=>{
+      if(p.name&&normAr(p.name).includes(nq)){
+        results.push({type:'staff',icon:'🏢',label:p.name,sub:`${section}${p.job?' — '+p.job:''}`,payload:p.name});
+      }
+    });
+  });
+
+  _gsrResults=results.slice(0,20);
+  if(!_gsrResults.length){
+    box.innerHTML='<div style="padding:14px;color:#999;font-size:.78rem;text-align:center">لا توجد نتائج لـ "'+q+'"</div>';
+    box.style.display='block';
+    return;
+  }
+  box.innerHTML=_gsrResults.map((r,i)=>`
+    <div style="padding:9px 14px;border-bottom:1px solid #f0f0f0;cursor:pointer;display:flex;align-items:center;gap:10px;"
+      onclick="jumpToGlobalResult(${i})" onmouseover="this.style.background='#f7fafd'" onmouseout="this.style.background='#fff'">
+      <span style="font-size:1.1rem;flex-shrink:0">${r.icon}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.82rem;font-weight:700;color:#222;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.label}</div>
+        <div style="font-size:.7rem;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.sub}</div>
+      </div>
+    </div>`).join('');
+  box.style.display='block';
+}
+function _gsrNavBtn(name){
+  return [...document.querySelectorAll('.nav-btn')].find(b=>(b.getAttribute('onclick')||'').includes(`showPage('${name}'`));
+}
+function jumpToGlobalResult(i){
+  const r=_gsrResults[i];if(!r)return;
+  document.getElementById('globalSearchResults').style.display='none';
+  document.getElementById('globalSearchInput').value='';
+  if(r.type==='teacher'){
+    showPage('teachers',_gsrNavBtn('teachers'));
+    setTimeout(()=>{const inp=document.getElementById('searchInput');if(inp){inp.value=r.payload;renderTeachersList();}},60);
+  }else if(r.type==='staff'){
+    showPage('staff',_gsrNavBtn('staff'));
+    setTimeout(()=>{const inp=document.getElementById('staffSearch');if(inp){inp.value=r.payload;renderStaffPage();}},60);
+  }else{ // subject أو dept — النتائج بالقسم أوضح صفحة تجمعهم
+    showPage('results',_gsrNavBtn('results'));
+  }
+}
+document.addEventListener('click',function(e){
+  const box=document.getElementById('globalSearchResults');
+  const inp=document.getElementById('globalSearchInput');
+  if(!box||!inp)return;
+  if(!box.contains(e.target)&&e.target!==inp)box.style.display='none';
+});
+
 
 // ═══════════════════════════════════════════
 // INIT & FINISH
@@ -5577,6 +5751,7 @@ function deleteStaffSection(sec){
   if(!(S.staff[sec]?.length===0)){
     if(!confirm(`هل تريد حذف قسم "${sec}" وجميع موظفيه (${S.staff[sec]?.length} موظف)؟`)) return;
   }
+  _autoPreImportSnapshot(`حذف قسم إداري: ${sec}`);
   delete S.staff[sec];
   S.staffSectionOrder=(S.staffSectionOrder||[]).filter(k=>k!==sec);
   saveState();
@@ -5642,6 +5817,7 @@ function saveStaffMember(){
 function deleteStaffMember(sec,idx){
   const m=S.staff[sec][idx];
   if(!confirm(`حذف "${m.name}" من قسم "${sec}"؟`)) return;
+  _autoPreImportSnapshot(`حذف موظف: ${m.name}`);
   S.staff[sec].splice(idx,1);
   saveState(); renderStaffPage();
   toast(`تم حذف: ${m.name}`);
