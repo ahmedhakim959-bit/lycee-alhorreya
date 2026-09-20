@@ -139,6 +139,25 @@ header{background:transparent;padding:18px 18px 14px;display:flex;flex-wrap:wrap
 .main{flex:1;max-width:none;margin:0;padding:24px 32px 60px;overflow-y:auto;height:100vh;box-sizing:border-box;}
 .page{display:none;}.page.active{display:block;}
 
+/* ══ على الموبايل (الشاشات الضيقة) يرجع الشكل القديم: شريط علوي بدل السايدبار ══
+   عشان السايدبار بعرض ثابت 250px بياكل نص شاشة الموبايل. من 881px لفوق (تابلت/كمبيوتر)
+   يفضل السايدبار الجديد زي ما هو فوق. */
+@media (max-width:880px){
+  #app.on{display:block;height:auto;overflow:visible;}
+  .app-shell{width:auto;height:auto;overflow:visible;box-shadow:none;background:transparent;display:block;}
+  header{background:var(--ink);padding:0 16px;flex-wrap:nowrap;align-items:center;gap:8px;
+    height:54px;box-shadow:0 3px 18px var(--sh);position:sticky;top:0;z-index:200;
+    border-bottom:none;overflow-x:auto;}
+  .h-yr{width:auto;order:0;margin-right:auto;white-space:nowrap;}
+  .nav{flex-direction:row;background:#111d2a;border-top:1px solid rgba(255,255,255,.05);
+    padding:0 16px;overflow-x:auto;overflow-y:visible;flex:none;}
+  .nav-btn{width:auto;text-align:center;border-right:none;border-bottom:3px solid transparent;
+    white-space:nowrap;padding:9px 14px;}
+  .nav-btn:hover{background:none;color:rgba(255,255,255,.7);}
+  .nav-btn.active{background:none;border-bottom-color:var(--gold);border-right-color:transparent;}
+  .main{max-width:1100px;margin:20px auto;padding:0 14px 60px;height:auto;overflow-y:visible;flex:none;}
+}
+
 .card{background:#fff;border-radius:14px;box-shadow:0 5px 28px var(--sh);
   overflow:hidden;margin-bottom:16px;animation:sld .28s ease;}
 @keyframes sld{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
