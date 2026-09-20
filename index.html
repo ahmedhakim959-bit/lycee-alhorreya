@@ -4656,6 +4656,43 @@ function isDeficitTeacher(t){
   return /[a-zA-Z]/.test(t.name);
 }
 
+// ── يقترح معلمين حقيقيين (مش رموز عجز) بيدرّسوا نفس المادة فعلاً وعندهم مساحة فاضية تحت نصابهم ──
+// محافظ عمدًا: بيقترح بس لو المعلم بيدرّس نفس المادة أصلاً (مش بس نفس القسم) تجنبًا لاقتراح غير مؤهل
+function _findDeficitCandidates(dept,subjName){
+  const candidates=[];
+  S.teachers.forEach(t=>{
+    if(isDeficitTeacher(t))return; // ده رمز عجز مش معلم حقيقي
+    const hasSubj=(t.assignments||[]).some(a=>subjMatch(a.subject,subjName));
+    if(!hasSubj)return;
+    const legal=getLegalLoad(t);
+    if(legal===null)return; // وكيل/بدون نصاب/نظام فصول — مش نصاب ثابت نقيسه
+    const actual=calcActualLoad(t);
+    const room=Math.round((legal-actual)*10)/10;
+    if(room<=0)return; // مفيش مساحة فاضية
+    const sameDept=(t.assignments||[]).some(a=>a.dept===dept&&subjMatch(a.subject,subjName));
+    candidates.push({name:t.name,degree:t.degree||'',room,sameDept});
+  });
+  candidates.sort((a,b)=>{
+    if(a.sameDept!==b.sameDept)return a.sameDept?-1:1;
+    return b.room-a.room;
+  });
+  return candidates.slice(0,4);
+}
+function _deficitSuggestHtml(dept,subjName){
+  const candidates=_findDeficitCandidates(dept,subjName);
+  if(!candidates.length){
+    return `<div style="margin-top:8px;font-size:.74rem;color:#999;">💡 مفيش معلم حالي بيدرّس المادة دي وعنده مساحة فاضية تحت نصابه — يحتاج تعيين معلم جديد</div>`;
+  }
+  return `<div style="margin-top:8px;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:8px;padding:8px 12px;">
+    <div style="font-weight:700;font-size:.78rem;color:#1e40af;margin-bottom:5px">💡 مرشحون محتملون لسد العجز — بيدرّسوا نفس المادة وعندهم مساحة فاضية:</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      ${candidates.map(c=>`<span style="background:#fff;border:1px solid #bfdbfe;border-radius:6px;padding:3px 10px;font-size:.76rem;">
+        <strong>${c.name}</strong>${c.degree?` (${c.degree})`:''}${c.sameDept?' — بالفعل في نفس القسم':''} — مساحة فاضية: ${fmtH(c.room)} ح
+      </span>`).join('')}
+    </div>
+  </div>`;
+}
+
 function _getDeficitData(deptFilter,subjFilter){
   collectSubjects();
   // اجمع كل معلمي العجز وتعيينات الحصص
@@ -4794,6 +4831,7 @@ function _buildDeficitBySubject(deptFilter, subjFilter){
             </tbody>
           </table>
         </div>
+        ${_deficitSuggestHtml(dept,subj)}
       </div>`;
     });
     html += `</div>`;
