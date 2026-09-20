@@ -2182,13 +2182,36 @@ function _updateLegalPreview(){
   el.textContent=`${load} حصة/أسبوع (${level})`;
   el.style.color='var(--blue)';
 }
+function _subjectOptionsHtml(dept, selected){
+  const subs=(S.subjects[dept]||[]).map(s=>s.name);
+  if(selected && !subs.some(s=>subjMatch(s,selected))) subs.push(selected); // يحافظ على مادة قديمة مش متعرّفة عشان متتفقدش
+  const opts=subs.map(s=>`<option value="${s}"${s===selected?' selected':''}>${s}</option>`).join('');
+  return `<option value="">— اختر مادة —</option>`+opts+`<option value="__new__">+ مادة جديدة...</option>`;
+}
+function _refreshAssignSubjectOptions(deptSelect){
+  const row=deptSelect.closest('.assign-row');
+  const subjSelect=row.querySelector('.da-subject');
+  subjSelect.innerHTML=_subjectOptionsHtml(deptSelect.value,'');
+}
+function onAssignSubjectChange(sel){
+  if(sel.value!=='__new__')return;
+  const dept=sel.closest('.assign-row').querySelector('.da-dept').value;
+  const name=prompt('اسم المادة الجديدة لقسم "'+dept+'":');
+  if(!name||!name.trim()){sel.value='';return;}
+  const clean=name.trim();
+  if(!S.subjects[dept])S.subjects[dept]=[];
+  if(!S.subjects[dept].some(s=>subjMatch(s.name,clean))){
+    S.subjects[dept].push({name:clean,weekly:0,classes:0});
+  }
+  sel.innerHTML=_subjectOptionsHtml(dept,clean);
+}
 function addAssignRow(dept='',classes='',subject=''){
   const list=document.getElementById('modalAssigns');
   const row=document.createElement('div');row.className='assign-row';
   const deptOptions=S.departments.map(d=>`<option value="${d}"${d===dept?' selected':''}>${d}</option>`).join('');
   row.innerHTML=`
-    <div><label>القسم</label><select class="da-dept">${deptOptions}</select></div>
-    <div><label>المادة</label><input type="text" class="da-subject" list="subjectsList" value="${subject}" placeholder="مادة..." autocomplete="off"/></div>
+    <div><label>القسم</label><select class="da-dept" onchange="_refreshAssignSubjectOptions(this)">${deptOptions}</select></div>
+    <div><label>المادة</label><select class="da-subject" onchange="onAssignSubjectChange(this)">${_subjectOptionsHtml(dept,subject)}</select></div>
     <div><label>الفصول <small style="color:#aaa">(½ مقبولة)</small></label>
       <input type="number" class="da-cls" min="0" max="30" step="0.5" value="${classes}" placeholder="0" class="u-center"/>
     </div>
