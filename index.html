@@ -488,7 +488,16 @@ textarea{resize:vertical;min-height:56px;}
   <div><div class="h-title">مدارس <span>ليسيه الحريه</span></div></div>
   <div class="h-yr">إدارة وسط – الإسكندرية | 2026/2027</div>
   <span id="appVersion" style="font-size:.58rem;color:rgba(255,255,255,.25);margin-right:4px">v18.05</span><!-- 20260629-123412 -->
-  <button onclick="ttSafeHardRefresh()" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-family:Cairo,sans-serif;font-size:8pt;cursor:pointer;margin-left:6px" title="تحديث التطبيق">🔄 تحديث</button><button onclick="ttBackupData()" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-family:Cairo,sans-serif;font-size:7.5pt;cursor:pointer;margin-left:4px" title="تصدير نسخة احتياطية من البيانات">💾 نسخ احتياطي</button><button onclick="ttRestoreData()" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-family:Cairo,sans-serif;font-size:7.5pt;cursor:pointer;margin-left:4px" title="استعادة بيانات من ملف JSON">📂 استعادة</button><button class="logout-btn" onclick="doLogout()">🔒 خروج</button>
+  <div style="position:relative;margin-right:auto;">
+    <button onclick="toggleHeaderMenu(event)" style="padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-family:Cairo,sans-serif;font-size:8pt;cursor:pointer;display:flex;align-items:center;gap:5px" title="أدوات النظام">⚙️ أدوات <span style="font-size:.7em">▾</span></button>
+    <div id="headerToolsMenu" style="display:none;position:absolute;left:0;top:100%;margin-top:6px;z-index:600;
+      background:#fff;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.35);min-width:190px;overflow:hidden;">
+      <button onclick="closeHeaderMenu();ttSafeHardRefresh()" style="all:unset;box-sizing:border-box;display:block;width:100%;padding:10px 14px;font-family:Cairo,sans-serif;font-size:.82rem;color:#222;cursor:pointer;border-bottom:1px solid #f0f0f0;">🔄 تحديث التطبيق</button>
+      <button onclick="closeHeaderMenu();ttBackupData()" style="all:unset;box-sizing:border-box;display:block;width:100%;padding:10px 14px;font-family:Cairo,sans-serif;font-size:.82rem;color:#222;cursor:pointer;border-bottom:1px solid #f0f0f0;">💾 نسخ احتياطي</button>
+      <button onclick="closeHeaderMenu();ttRestoreData()" style="all:unset;box-sizing:border-box;display:block;width:100%;padding:10px 14px;font-family:Cairo,sans-serif;font-size:.82rem;color:#222;cursor:pointer;border-bottom:1px solid #f0f0f0;">📂 استعادة نسخة</button>
+      <button onclick="closeHeaderMenu();doLogout()" style="all:unset;box-sizing:border-box;display:block;width:100%;padding:10px 14px;font-family:Cairo,sans-serif;font-size:.82rem;color:#c0392b;cursor:pointer;">🔒 تسجيل الخروج</button>
+    </div>
+  </div>
   <div style="width:100%;position:relative;margin-top:8px;">
     <input type="text" id="globalSearchInput" placeholder="🔎 بحث شامل: معلم، مادة، قسم، موظف..."
       oninput="handleGlobalSearch(this.value)"
@@ -2381,10 +2390,26 @@ function saveTeacher(){
   closeModal();saveState();renderTeacherStats();renderTeachersList();updateDatalist();
   logChange(isNew?'add':'edit',name,`${degree} – ${loadType==='fixed'?load+' حصة':loadType}`);
   const legal=getLegalLoad(teacher);const actual=calcActualLoad(teacher);
+  const msgs=[];
   if(legal!==null&&actual!==legal){
     const diff=actual-legal;
-    setTimeout(()=>toast(`⚠️ تنبيه: ${name} – ${diff<0?'ناقص':'زائد'} ${Math.abs(diff)} حصة عن النصاب`),400);
-  } else {
+    msgs.push(`⚠️ ${diff<0?'ناقص':'زائد'} ${Math.abs(diff)} حصة عن النصاب`);
+  }
+  // ── تحقق فوري: هل التعيين ده هيسبب فصول زيادة عن الحقيقي في أي مادة؟ (تضارب) ──
+  assigns.forEach(a=>{
+    if(!a.dept||!a.subject||!a.classes)return;
+    const sub=(S.subjects[a.dept]||[]).find(s=>subjMatch(s.name,a.subject));
+    if(!sub||!sub.classes)return;
+    const cov=calcClassCoverage(a.dept,sub);
+    if(cov.covered>cov.total){
+      msgs.push(`⚠️ تضارب: "${sub.name}" (${a.dept}) — ${fmtCls(cov.covered)} فصل موزّع من أصل ${fmtCls(cov.total)} فقط`);
+    }
+  });
+  if(msgs.length>1){
+    alert(msgs.join('\n')); // أكتر من تحذير — alert أوضح من toast (اللي بيقص النص الطويل)
+  }else if(msgs.length===1){
+    setTimeout(()=>toast(msgs[0]),400);
+  }else{
     toast(isNew?'✅ تم إضافة المعلم':'✅ تم تعديل البيانات');
   }
 }
@@ -2819,6 +2844,17 @@ function checkDataAnomalies(){
       }
     }
   }
+  // 3) فصول موزّعة على معلمين أكتر من عدد فصول المادة الحقيقي (تضارب/خطأ إدخال — مستحيل رياضيًا)
+  S.departments.forEach(dept=>{
+    (S.subjects[dept]||[]).forEach(sub=>{
+      if(!sub.name||!sub.classes)return;
+      const cov=calcClassCoverage(dept,sub);
+      if(cov.covered>cov.total){
+        const excess=Math.round((cov.covered-cov.total)*10)/10;
+        alerts.push(`"${sub.name}" في قسم "${dept}": موزّع عليها ${fmtCls(cov.covered)} فصل، لكن المادة معرّفة بـ ${fmtCls(cov.total)} فصل بس — فيه ${fmtCls(excess)} فصل زيادة عن الحقيقي (تضارب في البيانات، راجع تعيينات المعلمين لهذه المادة)`);
+      }
+    });
+  });
   return alerts;
 }
 function buildDashboard(){
@@ -3612,6 +3648,23 @@ document.addEventListener('click',function(e){
   const inp=document.getElementById('globalSearchInput');
   if(!box||!inp)return;
   if(!box.contains(e.target)&&e.target!==inp)box.style.display='none';
+});
+
+// ── قائمة "أدوات" المنسدلة في الهيدر (تحديث/نسخ احتياطي/استعادة/خروج) ──
+function toggleHeaderMenu(e){
+  e.stopPropagation();
+  const menu=document.getElementById('headerToolsMenu');
+  if(!menu)return;
+  menu.style.display=menu.style.display==='block'?'none':'block';
+}
+function closeHeaderMenu(){
+  const menu=document.getElementById('headerToolsMenu');
+  if(menu)menu.style.display='none';
+}
+document.addEventListener('click',function(e){
+  const menu=document.getElementById('headerToolsMenu');
+  if(!menu||menu.style.display!=='block')return;
+  if(!menu.contains(e.target))menu.style.display='none';
 });
 
 
