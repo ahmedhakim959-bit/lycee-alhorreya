@@ -112,8 +112,15 @@ body{font-family:'Cairo',sans-serif;background:var(--paper);color:var(--ink);min
    كل الـ id/class القديمة اتسابت زي ما هي بالظبط، فمفيش أي سطر JS اتلمس. */
 #app{display:none;}#app.on{display:flex;flex-direction:row;height:100vh;overflow:hidden;}
 .app-shell{width:250px;flex-shrink:0;display:flex;flex-direction:column;background:var(--ink);
-  height:100vh;overflow-y:auto;box-shadow:2px 0 18px var(--sh);}
+  height:100vh;overflow-y:auto;box-shadow:2px 0 18px var(--sh);transition:width .2s ease;}
+.app-shell.collapsed{width:60px;overflow:visible;}
 .app-shell::-webkit-scrollbar{width:6px;}
+.sidebar-toggle{all:unset;box-sizing:border-box;width:30px;height:30px;border-radius:8px;
+  background:rgba(255,255,255,.08);color:#fff;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;flex-shrink:0;font-size:14px;}
+.sidebar-toggle:hover{background:rgba(255,255,255,.16);}
+.app-shell.collapsed .h-title,.app-shell.collapsed .h-yr,.app-shell.collapsed #appVersion,
+.app-shell.collapsed .app-shell-searchwrap,.app-shell.collapsed .app-shell-toolswrap{display:none;}
 header{background:transparent;padding:18px 18px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;
   box-shadow:none;position:static;border-bottom:1px solid rgba(255,255,255,.08);}
 .h-logo{width:34px;height:34px;background:linear-gradient(135deg,var(--gold),var(--gold2));
@@ -129,6 +136,7 @@ header{background:transparent;padding:18px 18px 14px;display:flex;flex-wrap:wrap
 .nav{background:transparent;border-top:none;padding:10px 12px;flex-direction:column;
   overflow-x:visible;overflow-y:auto;display:flex;scrollbar-width:none;gap:2px;flex:1;}
 .nav::-webkit-scrollbar{display:none;}
+.app-shell.collapsed .nav{display:none;} /* طي بسيط: تختفي القائمة مع تضييق الشريط، دوس تاني على ☰ ترجع */
 .nav-btn{flex-shrink:0;width:100%;text-align:right;padding:10px 14px;border:none;border-radius:10px;background:none;
   font-family:'Cairo',sans-serif;font-size:.8rem;font-weight:600;
   color:rgba(255,255,255,.5);cursor:pointer;border-right:3px solid transparent;
@@ -146,6 +154,9 @@ header{background:transparent;padding:18px 18px 14px;display:flex;flex-wrap:wrap
 @media (max-width:880px){
   #app.on{display:block;height:auto;overflow:visible;}
   .app-shell{width:auto;height:auto;overflow:visible;box-shadow:none;background:transparent;display:block;}
+  .app-shell.collapsed{width:auto;} /* مفيش طي على الموبايل — أصلاً شريط علوي بسيط */
+  .app-shell.collapsed .nav{display:flex;} /* النافيجيشن الأفقي يفضل ظاهر دايمًا على الموبايل */
+  .sidebar-toggle{display:none;} /* الطي مفيدة بس على التابلت/الديسكتوب حيث السايدبار جانبي */
   header{background:var(--ink);padding:8px 16px;flex-wrap:wrap;align-items:center;gap:8px;
     height:auto;box-shadow:0 3px 18px var(--sh);position:sticky;top:0;z-index:200;
     border-bottom:none;}
@@ -482,13 +493,14 @@ textarea{resize:vertical;min-height:56px;}
 
 <!-- APP -->
 <div id="app">
-<div class="app-shell">
+<div class="app-shell" id="appShell">
 <header>
   <div class="h-logo">🏫</div>
+  <button class="sidebar-toggle" onclick="toggleSidebar()" title="طي/فتح القائمة الجانبية">☰</button>
   <div><div class="h-title">مدارس <span>ليسيه الحريه</span></div></div>
   <div class="h-yr">إدارة وسط – الإسكندرية | 2026/2027</div>
   <span id="appVersion" style="font-size:.58rem;color:rgba(255,255,255,.25);margin-right:4px">v18.05</span><!-- 20260629-123412 -->
-  <div style="position:relative;margin-right:auto;">
+  <div class="app-shell-toolswrap" style="position:relative;margin-right:auto;">
     <button onclick="toggleHeaderMenu(event)" style="padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-family:Cairo,sans-serif;font-size:8pt;cursor:pointer;display:flex;align-items:center;gap:5px" title="أدوات النظام">⚙️ أدوات <span style="font-size:.7em">▾</span></button>
     <div id="headerToolsMenu" style="display:none;position:absolute;left:0;top:100%;margin-top:6px;z-index:600;
       background:#fff;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.35);min-width:190px;overflow:hidden;">
@@ -498,7 +510,7 @@ textarea{resize:vertical;min-height:56px;}
       <button onclick="closeHeaderMenu();doLogout()" style="all:unset;box-sizing:border-box;display:block;width:100%;padding:10px 14px;font-family:Cairo,sans-serif;font-size:.82rem;color:#c0392b;cursor:pointer;">🔒 تسجيل الخروج</button>
     </div>
   </div>
-  <div style="width:100%;position:relative;margin-top:8px;">
+  <div class="app-shell-searchwrap" style="width:100%;position:relative;margin-top:8px;">
     <input type="text" id="globalSearchInput" placeholder="🔎 بحث شامل: معلم، مادة، قسم، موظف..."
       oninput="handleGlobalSearch(this.value)"
       onfocus="if(this.value)handleGlobalSearch(this.value)"
@@ -3522,6 +3534,9 @@ function showPage(name,btn){
   if(document.getElementById('subjectGrid')?.children.length>0)collectSubjects();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   const target=document.getElementById('page-'+name);if(target)target.classList.add('active');if(btn)btn.classList.add('active');
+  // ── إصلاح: زرار "أدوات الجداول" العائم (Smart Fix/تقرير الجودة) كان بيفضل ظاهر فوق صفحات تانية
+  //    بعد ما تستخدمه مرة في صفحة الجداول — دلوقتي بيتقفل تلقائيًا لما تسيب صفحة الجداول ──
+  if(name!=='timetable'){var _fabHide=document.getElementById('ttSmartFAB');if(_fabHide)_fabHide.style.display='none';}
   if(name==='setup'){renderSteps();renderChips();if(typeof buildDegreesGrid==='function')buildDegreesGrid();}
   if(name==='teachers'){renderTeacherStats();renderTeachersList();}
   if(name==='results')buildResults();
@@ -3660,6 +3675,12 @@ function toggleHeaderMenu(e){
 function closeHeaderMenu(){
   const menu=document.getElementById('headerToolsMenu');
   if(menu)menu.style.display='none';
+}
+
+// ── طي/فتح السايدبار — يوفّر مساحة أفقية على شاشات التابلت/الأجهزة المتوسطة ──
+function toggleSidebar(){
+  const shell=document.getElementById('appShell');
+  if(shell) shell.classList.toggle('collapsed');
 }
 document.addEventListener('click',function(e){
   const menu=document.getElementById('headerToolsMenu');
@@ -7989,9 +8010,20 @@ function ttGreedy(data){
   ord.sort(function(a,b){var la=data.lessons[a],lb=data.lessons[b];if(la.isSplit&&!lb.isSplit)return -1;if(!la.isSplit&&lb.isSplit)return 1;return 0;});
   ord.forEach(function(lid){
     var l=data.lessons[lid];var m=data.deptMeta[l.dept];if(!m)return;
+    // ── ✅ إصلاح: بدل ما ناخد "أقل تكلفة" حتى لو فيها تصادم حقيقي (معلم/فصل في مكانين وقت واحد)،
+    //    بنستبعد أي خانة فيها تصادم حقيقي خالص. لو مفيش خانة نضيفة، الحصة تتسيب من غير تسكين
+    //    (تظهر في "التعارضات" بوضوح) بدل ما تتحط بالغلط فوق حصة تانية بصمت. ──
+    var HARD_CLASH_THRESHOLD=40000; // أي تكلفة ≥ كده معناها تصادم معلم/فصل حقيقي (راجع ttLC: 50000)
     var best={d:-1,p:-1,c:Infinity};
-    for(var d=0;d<m.nD;d++) for(var p=m.dayMax[d]-1;p>=0;p--){var c2=ttLC(data,lid,d,p);if(c2<best.c){best={d:d,p:p,c:c2};}}
+    var bestAny={d:-1,p:-1,c:Infinity}; // احتياطي لو فعلاً مفيش أي خانة بدون تصادم (حالة نادرة/مستحيلة رياضيًا)
+    for(var d=0;d<m.nD;d++) for(var p=m.dayMax[d]-1;p>=0;p--){
+      var c2=ttLC(data,lid,d,p);
+      if(c2<bestAny.c) bestAny={d:d,p:p,c:c2};
+      if(c2<HARD_CLASH_THRESHOLD && c2<best.c) best={d:d,p:p,c:c2};
+    }
     if(best.d>=0) ttPL(data,lid,best.d,best.p);
+    // لو مفيش خانة نضيفة خالص (best.d===-1) — الحصة تتسيب بدون تسكين عمدًا، تظهر كـ"تعارض" واضح
+    // للمستخدم بدل ما تتحط فوق حصة معلم/فصل تاني بصمت.
   });
 }
 
@@ -12625,6 +12657,61 @@ function ttUpdateLambda(data, iter, totalIter){
 
 // ── 3. Pipeline الهجين الكامل ──
 var _origTtFullOptimize3 = ttFullOptimize;
+// ── ✅ شبكة أمان نهائية: بغض النظر عن أي مرحلة سابقة، الفحص ده بيضمن إن المخرج النهائي
+//    فعلاً خالي من أي تصادم حقيقي (معلم/فصل في مكانين وقت واحد بالظبط). لو لقى تصادم،
+//    بيحاول ينقل الحصة لخانة نضيفة، ولو مفيش خانة نضيفة أصلاً، بيسيبها بدون تسكين
+//    (تظهر واضحة في "التعارضات") بدل ما تتحط بالغلط فوق حصة تانية بصمت. ──
+function ttFinalClashCleanup(data){
+  var totalFixed=0, totalUnplaced=0, totalChecked=0;
+  for(var round=0; round<5; round++){
+    var teacherUse={}, classUse={};
+    var toFix=[];
+    data.lessons.forEach(function(l,lid){
+      var a=data.assign[lid]; if(!a) return;
+      var slotKey=a.day+'_'+a.period;
+      var ck=l.dept+'_'+l.cls+'|'+slotKey;
+      if(classUse[ck]!==undefined){ toFix.push(lid); return; }
+      classUse[ck]=lid;
+      if(l.teacher){
+        var tk=l.teacher+'|'+slotKey;
+        if(teacherUse[tk]!==undefined){ toFix.push(lid); return; }
+        teacherUse[tk]=lid;
+      }
+    });
+    if(!toFix.length) break; // مفيش تصادم — خلصنا
+    totalChecked+=toFix.length;
+    toFix.forEach(function(lid){
+      var l=data.lessons[lid]; var m=data.deptMeta[l.dept]; if(!m)return;
+      ttRM(data,lid);
+      var best={d:-1,p:-1,c:Infinity};
+      for(var d=0;d<m.nD;d++) for(var p=0;p<(m.dayMax[d]||m.nP||8);p++){
+        var c2=ttLC(data,lid,d,p);
+        if(c2<40000 && c2<best.c) best={d:d,p:p,c:c2};
+      }
+      if(best.d>=0){ ttPL(data,lid,best.d,best.p); }
+      // لو مفيش خانة نضيفة، تتسيب بدون تسكين مؤقتًا — هيتأكد منها تاني في الجولة الجاية
+      // أو تتسجّل "غير مُسكّنة" فعليًا لو فضلت كده لحد آخر جولة
+    });
+  }
+  // ── فحص أخير نهائي بعد كل الجولات: أي حصة لسه متصادمة فعليًا تتسيب بدون تسكين قسرًا ──
+  var teacherUse2={}, classUse2={};
+  data.lessons.forEach(function(l,lid){
+    var a=data.assign[lid]; if(!a) return;
+    var slotKey=a.day+'_'+a.period;
+    var ck=l.dept+'_'+l.cls+'|'+slotKey;
+    var clash=false;
+    if(classUse2[ck]!==undefined) clash=true; else classUse2[ck]=lid;
+    if(l.teacher){
+      var tk=l.teacher+'|'+slotKey;
+      if(teacherUse2[tk]!==undefined) clash=true; else teacherUse2[tk]=lid;
+    }
+    if(clash){ ttRM(data,lid); totalUnplaced++; }
+  });
+  totalFixed=totalChecked-totalUnplaced;
+  if(totalChecked) console.log('[FinalClashCleanup] فحص نهائي: '+totalChecked+' حالة تصادم عولجت عبر عدة جولات — أُصلحت نهائيًا: '+totalFixed+' — اتسابت بدون تسكين (تحتاج مراجعة يدوية): '+totalUnplaced);
+  return {checked:totalChecked, fixed:totalFixed, unplaced:totalUnplaced};
+}
+
 function ttFullOptimize(data, dept, onProgress, onDone){
   var T_START = Date.now();
   var MAX_TOTAL = 180000;
@@ -12633,6 +12720,7 @@ function ttFullOptimize(data, dept, onProgress, onDone){
   function timedOut(){ return elapsed()>MAX_TOTAL; }
 
   function finish(extra){
+    var cleanupResult = ttFinalClashCleanup(data);
     var finalCost=0;
     try{
       data.assign.forEach(function(a,i){
@@ -12644,7 +12732,7 @@ function ttFullOptimize(data, dept, onProgress, onDone){
     if(onProgress) onProgress(100, saved
       ? '✅ اكتمل — تحسّن عن السابق! ('+Math.round(elapsed()/1000)+'ث)'
       : '✅ اكتمل ('+Math.round(elapsed()/1000)+'ث)');
-    if(onDone) onDone(Object.assign({finalCost:finalCost, elapsed:elapsed()}, extra||{}));
+    if(onDone) onDone(Object.assign({finalCost:finalCost, elapsed:elapsed(), clashCleanup:cleanupResult}, extra||{}));
   }
 
   // ── يلف كل مرحلة بحماية: أي استثناء يُسجَّل في الكونسول ويُكمل بدل التوقف الصامت ──
