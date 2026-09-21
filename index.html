@@ -6557,6 +6557,22 @@ function buildBudgetPage(){
     html+='</div>';
   });
   body.innerHTML=html;
+  // ── تشخيص مؤقت: قياس فعلي لارتفاعات العناصر وكشف أي صفحة تانية ظاهرة بالغلط ──
+  setTimeout(function(){
+    var dbg=document.getElementById('ttDebugPanel');
+    if(!dbg) return;
+    var lines=[];
+    var mainEl=document.querySelector('.main');
+    lines.push('main.scrollHeight='+(mainEl?mainEl.scrollHeight:'?')+' main.clientHeight='+(mainEl?mainEl.clientHeight:'?')+' main.scrollTop='+(mainEl?mainEl.scrollTop:'?'));
+    var pb=document.getElementById('page-budget');
+    lines.push('page-budget.offsetTop='+(pb?pb.offsetTop:'?')+' offsetHeight='+(pb?pb.offsetHeight:'?'));
+    lines.push('--- كل صفحات .page وحالتها ---');
+    document.querySelectorAll('.page').forEach(function(p){
+      var cs=getComputedStyle(p);
+      lines.push(p.id+': display='+cs.display+' active-class='+p.classList.contains('active')+' offsetHeight='+p.offsetHeight+' offsetTop='+p.offsetTop);
+    });
+    dbg.textContent=lines.join('\n');
+  },300);
 }
 
 function exportBudgetPDF(){
@@ -13139,6 +13155,7 @@ function ttShowSmartSplitModal(dept){
 <!-- Update Banner -->
 <!-- ══ BUDGET REPORT PAGE ══ -->
 <div class="page" id="page-budget" style="outline:4px solid red;">
+  <div id="ttDebugPanel" style="background:#000;color:#0f0;font-family:monospace;font-size:11px;padding:10px;white-space:pre-wrap;direction:ltr;text-align:left;"></div>
   <div class="card" style="outline:4px solid blue;">
     <div class="card-head" style="background:linear-gradient(135deg,#1a3a5c,#2471a3);outline:4px solid orange;">
       <div>
