@@ -1061,6 +1061,30 @@ textarea{resize:vertical;min-height:56px;}
   </div>
 </div>
 
+
+<!-- ══ BUDGET REPORT PAGE ══ -->
+<div class="page" id="page-budget">
+  <div class="card">
+    <div class="card-head" style="background:linear-gradient(135deg,#1a3a5c,#2471a3)">
+      <div>
+        <h2>📊 بيان العجز والزيادة الرسمي</h2>
+        <p>توزيع المعلمين على الدرجات لكل مرحلة ومادة — جاهز للتقديم للوزارة</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-green btn-sm" onclick="exportBudgetExcel()">📥 Excel</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportBudgetPDF()">🖨️ PDF</button>
+        <button class="btn btn-ghost btn-sm" onclick="buildBudgetPage()">🔄 تحديث</button>
+        <button class="btn btn-ghost btn-sm" onclick="openMergeSettings()" style="background:#f59e0b;color:#fff;border:none">⚙️ إعدادات الدمج</button>
+      </div>
+    </div>
+    <div style="padding:10px 18px;background:#f0f9ff;border-bottom:1px solid #bae6fd;font-size:.83rem;color:#0369a1">
+      <strong>📌 ملاحظة:</strong> المعلمون بأسماء أبجدية (X, A, B…) يُحتسبون كعجز فعلي ولا يُضافون في توزيع الدرجات.
+      &nbsp;|&nbsp; <span id="budgetAlphaCount" class="u-fw7"></span>
+      <br><strong>📖 شرح الأرقام:</strong> كل خانة درجة تُظهر: <strong>العدد</strong> ثم <strong>العدد × النصاب القانوني (الطاقة الاستيعابية)</strong> ثم بالرمادي الحصص الفعلية الحقيقية في المادة
+    </div>
+    <div id="budgetBody" style="padding:16px"></div>
+  </div>
+</div>
 </div><!-- /main -->
 </div><!-- /app -->
 
@@ -6557,22 +6581,6 @@ function buildBudgetPage(){
     html+='</div>';
   });
   body.innerHTML=html;
-  // ── تشخيص مؤقت: قياس فعلي لارتفاعات العناصر وكشف أي صفحة تانية ظاهرة بالغلط ──
-  setTimeout(function(){
-    var dbg=document.getElementById('ttDebugPanel');
-    if(!dbg) return;
-    var lines=[];
-    var mainEl=document.querySelector('.main');
-    lines.push('main.scrollHeight='+(mainEl?mainEl.scrollHeight:'?')+' main.clientHeight='+(mainEl?mainEl.clientHeight:'?')+' main.scrollTop='+(mainEl?mainEl.scrollTop:'?'));
-    var pb=document.getElementById('page-budget');
-    lines.push('page-budget.offsetTop='+(pb?pb.offsetTop:'?')+' offsetHeight='+(pb?pb.offsetHeight:'?'));
-    lines.push('--- كل صفحات .page وحالتها ---');
-    document.querySelectorAll('.page').forEach(function(p){
-      var cs=getComputedStyle(p);
-      lines.push(p.id+': display='+cs.display+' active-class='+p.classList.contains('active')+' offsetHeight='+p.offsetHeight+' offsetTop='+p.offsetTop);
-    });
-    dbg.textContent=lines.join('\n');
-  },300);
 }
 
 function exportBudgetPDF(){
@@ -13153,30 +13161,6 @@ function ttShowSmartSplitModal(dept){
 </div>
 
 <!-- Update Banner -->
-<!-- ══ BUDGET REPORT PAGE ══ -->
-<div class="page" id="page-budget" style="outline:4px solid red;">
-  <div id="ttDebugPanel" style="background:#000;color:#0f0;font-family:monospace;font-size:11px;padding:10px;white-space:pre-wrap;direction:ltr;text-align:left;"></div>
-  <div class="card" style="outline:4px solid blue;">
-    <div class="card-head" style="background:linear-gradient(135deg,#1a3a5c,#2471a3);outline:4px solid orange;">
-      <div>
-        <h2>📊 بيان العجز والزيادة الرسمي</h2>
-        <p>توزيع المعلمين على الدرجات لكل مرحلة ومادة — جاهز للتقديم للوزارة</p>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-green btn-sm" onclick="exportBudgetExcel()">📥 Excel</button>
-        <button class="btn btn-ghost btn-sm" onclick="exportBudgetPDF()">🖨️ PDF</button>
-        <button class="btn btn-ghost btn-sm" onclick="buildBudgetPage()">🔄 تحديث</button>
-        <button class="btn btn-ghost btn-sm" onclick="openMergeSettings()" style="background:#f59e0b;color:#fff;border:none">⚙️ إعدادات الدمج</button>
-      </div>
-    </div>
-    <div style="padding:10px 18px;background:#f0f9ff;border-bottom:1px solid #bae6fd;font-size:.83rem;color:#0369a1;outline:4px solid purple;">
-      <strong>📌 ملاحظة:</strong> المعلمون بأسماء أبجدية (X, A, B…) يُحتسبون كعجز فعلي ولا يُضافون في توزيع الدرجات.
-      &nbsp;|&nbsp; <span id="budgetAlphaCount" class="u-fw7"></span>
-      <br><strong>📖 شرح الأرقام:</strong> كل خانة درجة تُظهر: <strong>العدد</strong> ثم <strong>العدد × النصاب القانوني (الطاقة الاستيعابية)</strong> ثم بالرمادي الحصص الفعلية الحقيقية في المادة
-    </div>
-    <div id="budgetBody" style="padding:16px;outline:4px solid green;"></div>
-  </div>
-</div>
 
 <!-- ══ BUDGET MERGE SETTINGS MODAL ══ -->
 <div id="mergeCfgModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;direction:rtl">
