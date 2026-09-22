@@ -282,10 +282,12 @@ textarea{resize:vertical;min-height:56px;}
 .bg-blue{background:#dbeeff;color:var(--blue)} .bg-gold{background:#fef9e7;color:#b7770d}
 .bg-gray{background:#f0ebe0;color:#666} .bg-purple{background:#f3e8ff;color:var(--purple)}
 
-.res-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px;}
-.res-card{background:#fff;border-radius:10px;padding:14px;border:2px solid var(--cream);text-align:center;}
+.res-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:18px;}
+.res-card{background:#fff;border-radius:16px;padding:16px 12px 14px;border:1px solid var(--cream);text-align:center;
+  box-shadow:0 2px 12px var(--sh);transition:transform .15s ease,box-shadow .15s ease;}
+.res-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px var(--sh);}
 .res-card .rv{font-size:1.7rem;font-weight:900;font-family:'Tajawal',sans-serif;line-height:1;}
-.res-card .rl{font-size:.69rem;color:#777;margin-top:2px;}
+.res-card .rl{font-size:.69rem;color:#777;margin-top:4px;}
 .rv-green{color:var(--green)} .rv-red{color:var(--red2)} .rv-gold{color:var(--gold)} .rv-blue{color:var(--blue)}
 
 .res-dept{border:2px solid var(--cream);border-radius:10px;margin-bottom:14px;overflow:hidden;}
@@ -477,6 +479,7 @@ textarea{resize:vertical;min-height:56px;}
 .u-clickable{cursor:pointer}
 .u-flex-g5-click{display:flex;align-items:center;gap:5px;cursor:pointer;font-size:8.5pt}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -3023,6 +3026,18 @@ function buildDashboard(){
     <div class="dash-card"><div class="dash-icon" style="background:${totalUncovClasses>0?'#fdf3e0':'#e6f7ec'};color:${totalUncovClasses>0?'#856404':'var(--green)'}">🏫</div><div class="dv" style="color:${totalUncovClasses>0?'#856404':'var(--green)'}">${totalUncovClasses}</div><div class="dl">إجمالي الفصول الغير مغطاة</div></div>
   </div>`;
 
+  // رسوم بيانية حقيقية — حالة النصاب + نسبة التغطية حسب القسم
+  html+=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:16px">
+    <div class="card" style="padding:14px;margin:0">
+      <div style="font-weight:800;font-size:.8rem;color:#374151;margin-bottom:8px">📊 حالة النصاب</div>
+      <div style="height:210px"><canvas id="dashStatusChart"></canvas></div>
+    </div>
+    <div class="card" style="padding:14px;margin:0">
+      <div style="font-weight:800;font-size:.8rem;color:#374151;margin-bottom:8px">🏢 نسبة التغطية حسب القسم</div>
+      <div style="height:210px"><canvas id="dashDeptChart"></canvas></div>
+    </div>
+  </div>`;
+
   // progress bars
   html+=`<div style="display:grid;gap:12px;margin-bottom:16px">
     <div>
@@ -3037,6 +3052,7 @@ function buildDashboard(){
 
   // per-dept mini table
   html+=`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>القسم</th><th>المطلوب (ح)</th><th>الموزع (ح)</th><th>التغطية</th><th>فصول غير مغطاة</th><th>الحالة</th></tr></thead><tbody>`;
+  const deptChartLabels=[], deptChartPcts=[];
   S.departments.forEach(dept=>{
     let req=0,asgn=0,deptUncov=0;
     (S.subjects[dept]||[]).filter(s=>s.name).forEach(sub=>{
@@ -3045,15 +3061,49 @@ function buildDashboard(){
       const cov=calcClassCoverage(dept,sub);deptUncov+=cov.uncovered;
     });
     const pct=req>0?Math.round(asgn/req*100):0;
+    deptChartLabels.push(dept);deptChartPcts.push(Math.min(pct,100));
     const color=pct>=100?'var(--green)':pct>=70?'var(--gold)':'var(--red2)';
     const uncovCell=deptUncov>0?`<span class="badge" style="background:#fff3cd;color:#856404">📭 ${deptUncov} فصل</span>`:`<span class="badge bg-green">✓ مغطى</span>`;
     html+=`<tr><td>${dept}</td><td>${req}</td><td>${asgn}</td><td><div class="prog-wrap" style="width:100px;display:inline-block"><div class="prog-bar" style="width:${Math.min(pct,100)}%;background:${color}"></div></div> <small>${pct}%</small></td><td>${uncovCell}</td><td>${pct>=100?'<span class="badge bg-green">✓</span>':pct===0?'<span class="badge bg-red">✗</span>':`<span class="badge bg-gold">${pct}%</span>`}</td></tr>`;
   });
   html+=`</tbody></table></div>`;
   body.innerHTML=html;
+  _ttRenderDashCharts(complete,deficit,excess,deputies,specialists,deptChartLabels,deptChartPcts);
 
   // archive section
   buildArchiveSection();
+}
+
+// ── رسوم بيانية حقيقية للوحة التحكم (Chart.js) — بتتدمّر وتتعاد كل مرة تتبنى فيها
+//    الصفحة عشان تفضل متزامنة مع البيانات، وبتتفادى الكراش لو المكتبة ما اتحمّلتش (مفيش نت) ──
+function _ttRenderDashCharts(complete,deficit,excess,deputies,specialists,deptLabels,deptPcts){
+  if(typeof Chart==='undefined') return;
+  if(window._dashStatusChart){window._dashStatusChart.destroy();window._dashStatusChart=null;}
+  if(window._dashDeptChart){window._dashDeptChart.destroy();window._dashDeptChart=null;}
+  var c1=document.getElementById('dashStatusChart');
+  if(c1){
+    window._dashStatusChart=new Chart(c1,{
+      type:'doughnut',
+      data:{
+        labels:['مكتمل','ناقص','زائد','وكلاء','بدون نصاب'],
+        datasets:[{data:[complete,deficit,excess,deputies,specialists],
+          backgroundColor:['#1b5e35','#c0392b','#2471a3','#3B6FE0','#8e44ad'],borderWidth:0}]
+      },
+      options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'Cairo',size:10},padding:10,boxWidth:10}}},cutout:'62%'}
+    });
+  }
+  var c2=document.getElementById('dashDeptChart');
+  if(c2&&deptLabels.length){
+    window._dashDeptChart=new Chart(c2,{
+      type:'bar',
+      data:{
+        labels:deptLabels,
+        datasets:[{data:deptPcts,backgroundColor:deptPcts.map(p=>p>=100?'#1b5e35':p>=70?'#3B6FE0':'#c0392b'),borderRadius:6,barThickness:14}]
+      },
+      options:{maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},
+        scales:{x:{max:100,ticks:{font:{family:'Cairo',size:9}}},y:{ticks:{font:{family:'Cairo',size:9}}}}}
+    });
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -3274,11 +3324,11 @@ function buildQuotaPage(){
   const complete=teachers.filter(t=>t._diff===0);
   const noQuota=teachers.filter(t=>t._diff===null);
 
-  let html=`<div class="dash-grid" class="u-mb14">
-    <div class="dash-card"><div class="dv" style="color:var(--red2)">${deficit.length}</div><div class="dl">ناقص النصاب</div></div>
-    <div class="dash-card"><div class="dv" style="color:var(--blue)">${excess.length}</div><div class="dl">زائد النصاب</div></div>
-    <div class="dash-card"><div class="dv" style="color:var(--green)">${complete.length}</div><div class="dl">مكتمل</div></div>
-    <div class="dash-card"><div class="dv" style="color:#888">${noQuota.length}</div><div class="dl">بدون نصاب</div></div>
+  let html=`<div class="dash-grid">
+    <div class="dash-card"><div class="dash-icon" style="background:#fdeaea;color:var(--red2)">⬇</div><div class="dv" style="color:var(--red2)">${deficit.length}</div><div class="dl">ناقص النصاب</div></div>
+    <div class="dash-card"><div class="dash-icon" style="background:#e8f0fe;color:var(--blue)">⬆</div><div class="dv" style="color:var(--blue)">${excess.length}</div><div class="dl">زائد النصاب</div></div>
+    <div class="dash-card"><div class="dash-icon" style="background:#e6f7ec;color:var(--green)">✅</div><div class="dv" style="color:var(--green)">${complete.length}</div><div class="dl">مكتمل</div></div>
+    <div class="dash-card"><div class="dash-icon" style="background:#f1f5f9;color:#888">⭕</div><div class="dv" style="color:#888">${noQuota.length}</div><div class="dl">بدون نصاب</div></div>
   </div>`;
 
   html+=`<div class="tbl-wrap"><table class="tbl"><thead><tr>
@@ -3345,11 +3395,11 @@ function showTeacherReport(idx){
       <div><h3 style="margin:0 0 4px;color:var(--navy)">${t.name}</h3>${noteTag}</div>
       <button onclick="this.closest('.modal-ov').remove()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;flex-shrink:0">✕</button>
     </div>
-    <div class="dash-grid" class="u-mb14">
+    <div class="dash-grid u-mb14">
       <div class="dash-card"><div class="dv" style="font-size:1rem">${t.degree}</div><div class="dl">الدرجة الوظيفية</div></div>
       <div class="dash-card"><div class="dv" style="font-size:1rem">${lvl}${primaryLabel}</div><div class="dl">المرحلة الأساسية</div></div>
-      <div class="dash-card"><div class="dv" style="color:var(--blue)">${legal!=null?fmtH(legal):'—'}</div><div class="dl">النصاب القانوني</div></div>
-      <div class="dash-card"><div class="dv" style="color:var(--green)">${fmtH(actual)}</div><div class="dl">إجمالي حصصه</div></div>
+      <div class="dash-card"><div class="dash-icon" style="background:#e8f0fe;color:var(--blue)">📜</div><div class="dv" style="color:var(--blue)">${legal!=null?fmtH(legal):'—'}</div><div class="dl">النصاب القانوني</div></div>
+      <div class="dash-card"><div class="dash-icon" style="background:#e6f7ec;color:var(--green)">📊</div><div class="dv" style="color:var(--green)">${fmtH(actual)}</div><div class="dl">إجمالي حصصه</div></div>
       <div class="dash-card" style="grid-column:span 2"><div class="dv" style="color:${diffColor};font-size:1rem">${diffTxt}</div><div class="dl">الحالة</div></div>
     </div>
     ${rows?`<div class="tbl-wrap"><table class="tbl">
@@ -5144,11 +5194,11 @@ function _buildDeficitByTeacher(deptFilter, subjFilter){
 // بطاقات إحصاءات مشتركة
 function _deficitStatsCards(count, totalHrs, totalCls, depts, subjs, countLabel){
   return `<div class="res-cards" style="margin-bottom:18px">
-    <div class="res-card"><div class="rv" style="color:#b91c1c">${count}</div><div class="rl">${countLabel}</div></div>
-    <div class="res-card"><div class="rv" style="color:#b91c1c">${fmtH(totalHrs)}</div><div class="rl">إجمالي حصص العجز</div></div>
-    <div class="res-card"><div class="rv" style="color:#b91c1c">${fmtCls(totalCls)}</div><div class="rl">إجمالي فصول العجز</div></div>
-    <div class="res-card"><div class="rv rv-blue">${depts}</div><div class="rl">أقسام متأثرة</div></div>
-    <div class="res-card"><div class="rv rv-gold">${subjs}</div><div class="rl">مواد متأثرة</div></div>
+    <div class="res-card"><div class="dash-icon" style="background:#fee2e2;color:#b91c1c">🔴</div><div class="rv" style="color:#b91c1c">${count}</div><div class="rl">${countLabel}</div></div>
+    <div class="res-card"><div class="dash-icon" style="background:#fee2e2;color:#b91c1c">⏱️</div><div class="rv" style="color:#b91c1c">${fmtH(totalHrs)}</div><div class="rl">إجمالي حصص العجز</div></div>
+    <div class="res-card"><div class="dash-icon" style="background:#fee2e2;color:#b91c1c">🏫</div><div class="rv" style="color:#b91c1c">${fmtCls(totalCls)}</div><div class="rl">إجمالي فصول العجز</div></div>
+    <div class="res-card"><div class="dash-icon" style="background:#e8f0fe;color:var(--blue)">🏢</div><div class="rv rv-blue">${depts}</div><div class="rl">أقسام متأثرة</div></div>
+    <div class="res-card"><div class="dash-icon" style="background:#fdf3e0;color:var(--gold)">📚</div><div class="rv rv-gold">${subjs}</div><div class="rl">مواد متأثرة</div></div>
   </div>`;
 }
 
@@ -7941,6 +7991,54 @@ function ttGenerate(singleDept){
 // ══════════════════════════════════════════════════════════════
 // ALGORITHM — Greedy + Simulated Annealing
 // ══════════════════════════════════════════════════════════════
+//
+// ── أشكال البيانات الأساسية لمحرك الجدولة (توثيق فقط — بيساعد أي أداة فحص أنواع
+//    زي TypeScript تكتشف باگات زي "اتفحص teacher بس اتنسى teachers" قبل ما تحصل ──
+/**
+ * حصة واحدة (Lesson) — وحدة العمل الأساسية اللي الخوارزمية بتحاول تسكّنها في يوم/حصة.
+ * @typedef {Object} Lesson
+ * @property {number} id - فهرس الحصة في data.lessons (ثابت طول التوليد)
+ * @property {string} dept - اسم القسم
+ * @property {number} cls - فهرس الفصل (0-based)
+ * @property {string} subj - اسم المادة (للحصص المقسَّمة بمواد مختلفة: اسم مدموج "أ/ب")
+ * @property {string} teacher - أول معلم بس (توافق قديم) — **ما تعتمدش عليه لوحده أبدًا**
+ * @property {string[]} teachers - **المصدر الوحيد الموثوق لكل المعلمين المشاركين في الحصة** (معلم واحد عادي، أكتر من واحد لو isSplit)
+ * @property {boolean} isSplit - الحصة مقسَّمة لمجموعات (كل مجموعة معلم/مادة مختلفة، بتتحسب حصة واحدة)
+ * @property {Array<{name:string,teacher:string,subject?:string}>} splitGroups - تفاصيل كل مجموعة لو isSplit
+ * @property {Object} ss - إعدادات المادة (نتيجة ttSset)
+ * @property {number} weekly - عدد حصص المادة أسبوعيًا
+ * @property {boolean} [_locked] - قفل حقيقي صلب — ثابت مكانها، ما ينقلهاش أي مشغّل في الخوارزمية
+ * @property {{d:number,p:number}} [_lockedPos] - الموضع المقفول عليه (لو _locked)
+ */
+/**
+ * خانة واحدة في الجدول النهائي بعد التوليد (Slot) — زي Lesson بس بعد ما اتسكّنت.
+ * @typedef {Object} Slot
+ * @property {string} subj
+ * @property {string} teacher - أول معلم بس — **نفس تحذير Lesson.teacher بالظبط**
+ * @property {string[]} [teachers] - **افحص القائمة دي دايمًا لأي منطق بيدوّر على "هل المعلم ده موجود هنا؟"**
+ * @property {boolean} [isSplit]
+ * @property {Array<{name:string,teacher:string,subject?:string}>|null} [splitGroups]
+ * @property {boolean} [_manual] - اتحطّت يدويًا (مش من الخوارزمية)
+ */
+/**
+ * بيانات دورة توليد واحدة — كل شبكات العمل المؤقتة اللي الخوارزمية بتقرأ/تكتب فيها.
+ * @typedef {Object} GenData
+ * @property {Lesson[]} lessons
+ * @property {Object<string,DeptMeta>} deptMeta
+ * @property {(Object|null)[]} assign - assign[lid] = {day,period} أو null لو لسه مسكّنتش
+ * @property {Object<string,Array<Array<number>>>} cG - شبكة الفصول: cG['dept|cls'][day][period] = lid أو -1
+ * @property {Object<string,Array<Array<number>>>} tG - شبكة المعلمين: tG[teacherName][day][period] = lid
+ */
+/**
+ * @typedef {Object} DeptMeta
+ * @property {string[]} days
+ * @property {Array<Object>} pers
+ * @property {number} nD
+ * @property {number} nP
+ * @property {number[]} zone
+ * @property {Object<string,number>} dayMax
+ * @property {Object<string,Array<{dn:string,pi:number}>>} sharedBlocked
+ */
 function ttBuildLessons(depts,cfg){
   var lessons=[],deptMeta={};
   var appliedLocksByDept={}; // بند 5 (تكملة): خرائط القفل اللي فعلاً اترّبطت بحصة حقيقية، عشان تُحفظ في نتيجة التوليد الجديدة
