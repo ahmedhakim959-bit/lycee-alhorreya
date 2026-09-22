@@ -814,10 +814,10 @@ textarea{resize:vertical;min-height:56px;}
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-green btn-sm" onclick="ttSave()">💾 حفظ</button>
-        <button onclick="ttShowFeasibilityModal()" style="padding:5px 12px;background:#0284c7;color:#fff;border:none;border-radius:8px;font-family:Cairo,sans-serif;font-size:8pt;cursor:pointer">🔍 فحص الجدوى</button>
+        <button onclick="ttShowDiagnosticsMenu()" style="padding:5px 12px;background:#334155;color:#fff;border:none;border-radius:8px;font-family:Cairo,sans-serif;font-size:8pt;cursor:pointer;font-weight:700" title="فحص استباقي، فحص الجدوى، نقاط الاختناق، تحقق شامل">🔎 تشخيص ▾</button>
         <button onclick="ttShowGenMenu()" style="padding:6px 14px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-family:Cairo,sans-serif;font-size:8.5pt;font-weight:700;cursor:pointer">⚡ توليد ▾</button>
-          <button onclick="addSubjectRelationConstraint()" style="padding:5px 12px;background:#059669;color:#fff;border:none;border-radius:8px;font-family:Cairo,sans-serif;font-size:8pt;cursor:pointer" title="مادتين ممنوع/لازم يبقوا نفس اليوم">➕ قيد بين مادتين</button>
-          <button onclick="showCustomConstraints()" style="padding:5px 12px;background:#fff;color:#059669;border:1.5px solid #059669;border-radius:8px;font-family:Cairo,sans-serif;font-size:8pt;cursor:pointer" title="عرض/حذف القيود المضافة">📋 القيود الحالية</button>
+        <button onclick="ttShowConstraintsMenu()" style="padding:5px 12px;background:#059669;color:#fff;border:none;border-radius:8px;font-family:Cairo,sans-serif;font-size:8pt;cursor:pointer;font-weight:700" title="قيد بين مادتين، القيود الحالية">⚙️ القيود ▾</button>
+        <button onclick="ttShowCoverModal()" style="padding:5px 12px;background:#0f766e;color:#fff;border:none;border-radius:8px;font-family:Cairo,sans-serif;font-size:8pt;cursor:pointer" title="تسجيل غياب معلم واقتراح بدلاء فاضيين فعليًا">🩹 تغطية الغياب</button>
           <button onclick="ttShowClaudeChat()" style="padding:5px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;font-family:Cairo,sans-serif;font-size:8.5pt;cursor:pointer;font-weight:700">🤖 Claude AI</button>
       </div>
     </div>
@@ -915,14 +915,14 @@ textarea{resize:vertical;min-height:56px;}
           <!-- أدوات -->
           <button onclick="ttPrint()" class="tt-tool-btn" title="طباعة">🖨️</button>
           <button onclick="ttPrintPreview()" class="tt-tool-btn" title="معاينة قبل الطباعة">👁️</button>
-          <button onclick="document.getElementById('ttStatsPanel').style.display=document.getElementById('ttStatsPanel').style.display==='none'?'block':'none'" class="tt-tool-btn" title="إحصائيات">📊</button>
+          <button onclick="document.getElementById('ttStatsPanel').style.display=document.getElementById('ttStatsPanel').style.display==='none'?'block':'none'" class="tt-tool-btn" title="إحصائيات">📈</button>
           <button id="ttUndoBtn" onclick="ttUndo()" class="tt-tool-btn" title="تراجع (Undo)" style="opacity:0.4" disabled>↩</button>
           <button id="ttRedoBtn" onclick="ttRedo()" class="tt-tool-btn" title="إعادة (Redo)" style="opacity:0.4" disabled>↪</button>
-          <button onclick="ttExportExcel()" class="tt-tool-btn" title="تصدير Excel">📊</button>
+          <button onclick="ttExportExcel()" class="tt-tool-btn" title="تصدير Excel">📥</button>
           <button onclick="ttTeacherReport(TT.resDept)" class="tt-tool-btn" title="تقرير المعلمين">📋</button>
           <button onclick="ttGenerate(TT.resDept||null)" class="tt-tool-btn" title="إعادة توليد" style="color:#a78bfa">🔄</button>
           <button onclick="ttSmartExport(TT.resDept||null)" class="tt-tool-btn" title="تصدير ذكي لـ Claude" style="color:#16a34a">🚀</button>
-          <button onclick="ttQualityReport(TT.resDept||null)" class="tt-tool-btn" title="تقرير الجودة الإحصائي" style="color:#2563eb">📊</button>
+          <button onclick="ttQualityReport(TT.resDept||null)" class="tt-tool-btn" title="تقرير الجودة الإحصائي" style="color:#2563eb">🏆</button>
           <button onclick="ttSmartFix()" class="tt-tool-btn" title="كشف التعارضات" style="color:#dc2626">🔧</button>
           <button onclick="ttShowGenMenu()" class="tt-tool-btn" title="توليد جديد" style="color:#34d399;font-weight:700">⚡</button>
         </div>
@@ -948,6 +948,57 @@ textarea{resize:vertical;min-height:56px;}
     <div id="ttFeasibContent" style="padding:12px"></div>
   </div>
 </div>
+<div id="ttAdvisorModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:40px;direction:rtl" onclick="if(event.target===this)document.getElementById('ttAdvisorModal').style.display='none'">
+  <div style="background:#fff;border-radius:12px;width:min(560px,95vw);max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="background:#065f46;color:#fff;padding:12px 16px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0">
+      <span style="font-weight:700;font-size:10pt">🧭 فحص استباقي قبل التوليد</span>
+      <button onclick="document.getElementById('ttAdvisorModal').style.display='none'" class="u-close-btn">✕</button>
+    </div>
+    <div id="ttAdvisorContent" style="padding:14px 16px"></div>
+  </div>
+</div>
+<div id="ttVerifyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:40px;direction:rtl" onclick="if(event.target===this)document.getElementById('ttVerifyModal').style.display='none'">
+  <div style="background:#fff;border-radius:12px;width:min(560px,95vw);max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="background:#4c1d95;color:#fff;padding:12px 16px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0">
+      <span style="font-weight:700;font-size:10pt">🧪 تحقق شامل من الجداول المولَّدة</span>
+      <button onclick="document.getElementById('ttVerifyModal').style.display='none'" class="u-close-btn">✕</button>
+    </div>
+    <div id="ttVerifyContent" style="padding:14px 16px"></div>
+  </div>
+</div>
+<div id="ttCoverModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:40px;direction:rtl" onclick="if(event.target===this)document.getElementById('ttCoverModal').style.display='none'">
+  <div style="background:#fff;border-radius:12px;width:min(560px,95vw);max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="background:#0f766e;color:#fff;padding:12px 16px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1">
+      <span style="font-weight:700;font-size:10pt">🩹 تغطية الغياب</span>
+      <button onclick="document.getElementById('ttCoverModal').style.display='none'" class="u-close-btn">✕</button>
+    </div>
+    <div style="padding:14px 16px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <div style="flex:1;min-width:160px">
+          <label style="font-size:8pt;font-weight:600;color:#374151;display:block;margin-bottom:4px">المعلم الغائب:</label>
+          <select id="ttCoverTeacher" onchange="ttCoverSearch()" style="width:100%;padding:7px;border:1px solid #d1d5db;border-radius:6px;font-family:Cairo,sans-serif;font-size:9pt;direction:rtl"><option value="">— اختر —</option></select>
+        </div>
+        <div style="min-width:140px">
+          <label style="font-size:8pt;font-weight:600;color:#374151;display:block;margin-bottom:4px">تاريخ الغياب:</label>
+          <input type="date" id="ttCoverDate" onchange="ttCoverSearch()" style="width:100%;padding:6px;border:1px solid #d1d5db;border-radius:6px;font-family:Cairo,sans-serif;font-size:9pt"/>
+        </div>
+      </div>
+      <div id="ttCoverContent"><p style="color:#aaa;text-align:center;padding:16px;font-size:8.5pt">اختر المعلم والتاريخ لعرض الحصص المتأثرة</p></div>
+      <div id="ttCoverSaveBar" style="display:none;margin-top:12px;text-align:left">
+        <button onclick="ttCoverSave()" class="btn btn-green" style="padding:8px 20px">💾 حفظ خطة التغطية</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="ttBottleneckModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:60px;direction:rtl" onclick="if(event.target===this)document.getElementById('ttBottleneckModal').style.display='none'">
+  <div style="background:#fff;border-radius:12px;width:min(480px,94vw);max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="background:#7c2d12;color:#fff;padding:12px 16px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0">
+      <span style="font-weight:700;font-size:10pt">🎯 نقاط الاختناق</span>
+      <button onclick="document.getElementById('ttBottleneckModal').style.display='none'" class="u-close-btn">✕</button>
+    </div>
+    <div id="ttBottleneckContent" style="padding:12px"></div>
+  </div>
+</div>
 <div id="ttCellModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;direction:rtl" onclick="if(event.target===this)ttCloseCell()">
   <div style="background:#fff;border-radius:12px;width:min(360px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden">
     <div style="background:#1a3a5c;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
@@ -961,8 +1012,9 @@ textarea{resize:vertical;min-height:56px;}
       </div>
       <div class="u-mb14">
         <label style="font-size:8.5pt;font-weight:600;color:#374151;display:block;margin-bottom:4px">المعلم:</label>
-        <select id="ttCellTeach" style="width:100%;padding:7px;border:1px solid #d1d5db;border-radius:6px;font-family:Cairo,sans-serif;font-size:9pt;direction:rtl"></select>
+        <select id="ttCellTeach" onchange="ttCheckCellConflict()" style="width:100%;padding:7px;border:1px solid #d1d5db;border-radius:6px;font-family:Cairo,sans-serif;font-size:9pt;direction:rtl"></select>
       </div>
+      <div id="ttCellConflictWarn" style="display:none;margin-bottom:12px;padding:8px 10px;border-radius:7px;font-size:8pt;line-height:1.6"></div>
       <div style="display:flex;gap:8px">
         <button onclick="ttSaveCell()" class="btn btn-green" style="flex:1;padding:8px">💾 حفظ</button>
         <button onclick="ttClearCell()" style="padding:8px 14px;border:1px solid #fca5a5;border-radius:8px;background:#fff1f2;color:#991b1b;font-family:Cairo,sans-serif;font-size:8.5pt;cursor:pointer">🗑 مسح</button>
@@ -7520,6 +7572,11 @@ function ttTRender(){
             +' onchange="ttSetMaxDay(this.dataset.t,+this.value)"'
             +' style="width:42px;border:1px solid #d1d5db;border-radius:4px;padding:2px 5px;text-align:center">'
           +'</label>'
+          +'<label style="font-size:8.5pt;display:flex;align-items:center;gap:4px" onclick="event.stopPropagation()" title="أقصى عدد فجوات مسموح بين أول وآخر حصة للمعلم في اليوم — قيد تفضيلي وليس صلب">'
+            +'حد الفجوات: <input type="number" min="0" max="8" value="'+(ts.maxGaps!=null?ts.maxGaps:'') +'" placeholder="—" data-t="'+t.name.replace(/"/g,'&quot;')+'"'
+            +' onchange="ttSetMaxGaps(this.dataset.t,this.value)"'
+            +' style="width:42px;border:1px solid #d1d5db;border-radius:4px;padding:2px 5px;text-align:center">'
+          +'</label>'
           +'<span id="arr_'+id+'" style="color:#6b7280">▼</span>'
         +'</div>'
       +'</div>'
@@ -7554,6 +7611,13 @@ function ttToggleTeacher(id){
 function ttSetMaxDay(name,val){
   var ts=ttTset(name);ts.maxPerDay=Math.min(9,Math.max(1,val||5));
   saveState();toast('✅ '+name+': '+ts.maxPerDay+' حصة/يوم');
+}
+// بند من خطة التطوير: توسيع قيود المعلم — حد أقصى للفجوات (gaps) بين أول وآخر حصة في اليوم
+function ttSetMaxGaps(name,val){
+  var ts=ttTset(name);
+  if(val===''||val==null){ delete ts.maxGaps; saveState(); toast('✅ '+name+': حد الفجوات اتشال'); return; }
+  ts.maxGaps=Math.min(8,Math.max(0,+val||0));
+  saveState();toast('✅ '+name+': حد الفجوات '+ts.maxGaps);
 }
 function ttTogBlocked(btn){
   var name=btn.dataset.t;var k=btn.dataset.k;
@@ -7705,6 +7769,56 @@ function ttShowGenMenu(){
   document.body.appendChild(dd);
 }
 
+// ── إعادة تنظيم الشريط العلوي: تجميع أدوات التشخيص في قائمة واحدة بدل 4 أزرار منفصلة ──
+function ttShowDiagnosticsMenu(){
+  var ex=document.getElementById('ttDiagMenuDD');if(ex){ex.remove();return;}
+  var dd=document.createElement('div');
+  dd.id='ttDiagMenuDD';
+  dd.style.cssText='position:fixed;top:100px;left:50%;transform:translateX(-50%);z-index:9999;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.2);padding:8px;min-width:230px;direction:rtl';
+  var title=document.createElement('div');
+  title.style.cssText='padding:4px 8px;font-size:8pt;color:#6b7280;border-bottom:1px solid #f1f5f9;margin-bottom:6px;font-family:Cairo,sans-serif';
+  title.textContent='أدوات التشخيص:';
+  dd.appendChild(title);
+  function mkBtn(lbl,fn,color){
+    var b=document.createElement('button');
+    b.textContent=lbl;
+    b.style.cssText='display:block;width:100%;padding:7px 12px;border:none;border-radius:6px;background:#f8fafc;color:'+(color||'#374151')+';font-family:Cairo,sans-serif;font-size:8.5pt;cursor:pointer;margin-bottom:3px;text-align:right;font-weight:600';
+    b.addEventListener('click',function(){dd.remove();fn();});
+    return b;
+  }
+  dd.appendChild(mkBtn('🧭 فحص استباقي (قبل التوليد)',ttShowAdvisorModal,'#065f46'));
+  dd.appendChild(mkBtn('🔍 فحص الجدوى',ttShowFeasibilityModal,'#0284c7'));
+  dd.appendChild(mkBtn('🎯 نقاط الاختناق',ttShowBottleneckModal,'#7c2d12'));
+  dd.appendChild(mkBtn('🧪 تحقق شامل (بعد التوليد)',ttShowVerifyModal,'#4c1d95'));
+  var cl=document.createElement('button');
+  cl.textContent='✕ إغلاق';cl.style.cssText='display:block;width:100%;padding:5px;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;color:#6b7280;font-family:Cairo,sans-serif;font-size:8pt;cursor:pointer;margin-top:4px';
+  cl.addEventListener('click',function(){dd.remove();});dd.appendChild(cl);
+  document.body.appendChild(dd);
+}
+function ttShowConstraintsMenu(){
+  var ex=document.getElementById('ttConstrMenuDD');if(ex){ex.remove();return;}
+  var dd=document.createElement('div');
+  dd.id='ttConstrMenuDD';
+  dd.style.cssText='position:fixed;top:100px;left:50%;transform:translateX(-50%);z-index:9999;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.2);padding:8px;min-width:220px;direction:rtl';
+  var title=document.createElement('div');
+  title.style.cssText='padding:4px 8px;font-size:8pt;color:#6b7280;border-bottom:1px solid #f1f5f9;margin-bottom:6px;font-family:Cairo,sans-serif';
+  title.textContent='القيود والإعدادات:';
+  dd.appendChild(title);
+  function mkBtn(lbl,fn,color){
+    var b=document.createElement('button');
+    b.textContent=lbl;
+    b.style.cssText='display:block;width:100%;padding:7px 12px;border:none;border-radius:6px;background:#f8fafc;color:'+(color||'#374151')+';font-family:Cairo,sans-serif;font-size:8.5pt;cursor:pointer;margin-bottom:3px;text-align:right;font-weight:600';
+    b.addEventListener('click',function(){dd.remove();fn();});
+    return b;
+  }
+  dd.appendChild(mkBtn('➕ قيد بين مادتين',addSubjectRelationConstraint,'#059669'));
+  dd.appendChild(mkBtn('📋 القيود الحالية',showCustomConstraints,'#059669'));
+  var cl=document.createElement('button');
+  cl.textContent='✕ إغلاق';cl.style.cssText='display:block;width:100%;padding:5px;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;color:#6b7280;font-family:Cairo,sans-serif;font-size:8pt;cursor:pointer;margin-top:4px';
+  cl.addEventListener('click',function(){dd.remove();});dd.appendChild(cl);
+  document.body.appendChild(dd);
+}
+
 function ttGenerate(singleDept){
   var cfg=ttCfg();
   var depts=(S.departments||[]).filter(function(d){
@@ -7748,7 +7862,9 @@ function ttGenerate(singleDept){
           ttFullOptimize(data,dept,
               function(pct,msg){ttGenProg(pct,msg);},
               function(){
+                var _appliedLocks=data.appliedLocksByDept&&data.appliedLocksByDept[dept];
                 S.generatedTimetable[dept]=ttBuildResult(data,[dept]);
+                if(_appliedLocks&&Object.keys(_appliedLocks).length) S.generatedTimetable[dept].locked=_appliedLocks; // ← حافظ بس على القفل اللي فعلاً اترّبط بحصة حقيقية
                 qi++;setTimeout(next,50);
               });
         },80);}catch(e){console.error(e);toast('❌ '+dept+': '+e.message);qi++;setTimeout(next,50);}
@@ -7762,6 +7878,7 @@ function ttGenerate(singleDept){
 // ══════════════════════════════════════════════════════════════
 function ttBuildLessons(depts,cfg){
   var lessons=[],deptMeta={};
+  var appliedLocksByDept={}; // بند 5 (تكملة): خرائط القفل اللي فعلاً اترّبطت بحصة حقيقية، عشان تُحفظ في نتيجة التوليد الجديدة
   // حجب المعلمين المشتركين من الأقسام المُولَّدة مسبقاً
   var sharedBlocked={};
   var allRes=S.generatedTimetable||{};
@@ -7832,9 +7949,46 @@ function ttBuildLessons(depts,cfg){
         }
       }
     }
+
+    // ── بند 5 (تكملة): تثبيت الحصص المقفولة يدويًا — لو القسم ده اتولّد قبل كده وفيه خلايا
+    //    مقفولة (🔒)، بنربطها بحصة من نفس المادة/الفصل في القائمة الجديدة، ونثبّت معلمها وموضعها
+    //    (_locked + _lockedPos) عشان تفضل زي ما هي بالظبط في أي إعادة توليد — الحماية الفعلية
+    //    بتحصل بعد كده في ttGreedy (تثبيت مبكر) وفي ttPL/ttRM (حماية على مستوى كل الخوارزميات) ──
+    (function(){
+      var prevRes=S.generatedTimetable&&S.generatedTimetable[dept];
+      if(!prevRes||!prevRes.locked) return;
+      var deptLessons=lessons.filter(function(l){return l.dept===dept;});
+      var claimed={};
+      var appliedLocks={}; // نتتبّع بس القفل اللي فعلاً اترّبط بحصة حقيقية — عشان ما نسيبش أيقونة قفل يتيمة لو المادة/الفصل اتغيّر
+      Object.keys(prevRes.locked).forEach(function(cid){
+        var byD=prevRes.locked[cid]||{};
+        Object.keys(byD).forEach(function(dKey){
+          var byP=byD[dKey]||{};
+          Object.keys(byP).forEach(function(pKey){
+            if(!byP[pKey]) return; // متفكّك (false) — مش مقفول فعليًا
+            var cls=+String(cid).replace('cls_','');
+            var d=+dKey,p=+pKey;
+            var slot=prevRes.timetable&&prevRes.timetable[dept]&&prevRes.timetable[dept][cid]&&prevRes.timetable[dept][cid][d]&&prevRes.timetable[dept][cid][d][p];
+            if(!slot||!slot.subj) return;
+            var match=deptLessons.find(function(l){return l.cls===cls&&subjMatch(l.subj,slot.subj)&&!claimed[l.id];});
+            if(match){
+              match.teacher=slot.teacher||match.teacher;
+              match.teachers=slot.teachers&&slot.teachers.length?slot.teachers:[match.teacher];
+              match._locked=true;
+              match._lockedPos={d:d,p:p};
+              claimed[match.id]=true;
+              if(!appliedLocks[cid])appliedLocks[cid]={};
+              if(!appliedLocks[cid][d])appliedLocks[cid][d]={};
+              appliedLocks[cid][d][p]=true;
+            }
+          });
+        });
+      });
+      if(!appliedLocksByDept[dept]) appliedLocksByDept[dept]=appliedLocks;
+    })();
   }
   var assign=lessons.map(function(){return null;});
-  return {lessons:lessons,deptMeta:deptMeta,assign:assign,cG:{},tG:{}};
+  return {lessons:lessons,deptMeta:deptMeta,assign:assign,cG:{},tG:{},appliedLocksByDept:appliedLocksByDept};
 }
 
 // شبكات السريعة
@@ -7848,15 +8002,46 @@ function ttIG(data){
   });
 }
 function ttPL(data,lid,d,p){
-  var l=data.lessons[lid];data.assign[lid]={day:d,period:p};
-  var k=ttGk(l.dept,l.cls);if(data.cG[k]&&data.cG[k][d])data.cG[k][d][p]=lid;
+  var l=data.lessons[lid];
+  // ── قفل حقيقي صلب: امنع تحريك حصة مقفولة برّه مكانها الأصلي، وامنع الدوس على خانة مقفولة بحصة تانية ──
+  if(l._locked&&l._lockedPos&&(l._lockedPos.d!==d||l._lockedPos.p!==p)) return;
+  var k=ttGk(l.dept,l.cls);
+  var occ=data.cG[k]&&data.cG[k][d]?data.cG[k][d][p]:-1;
+  if(occ>=0&&occ!==lid&&data.lessons[occ]&&data.lessons[occ]._locked) return;
+  data.assign[lid]={day:d,period:p};
+  if(data.cG[k]&&data.cG[k][d])data.cG[k][d][p]=lid;
   (l.teachers||[l.teacher]).forEach(function(t){if(!t)return;if(!data.tG[t])data.tG[t]=[];if(!data.tG[t][d])data.tG[t][d]=[];data.tG[t][d][p]=lid;});
 }
 function ttRM(data,lid){
   var l=data.lessons[lid],a=data.assign[lid];if(!a)return;
+  if(l._locked) return; // قفل حقيقي صلب: ما ينشالش من مكانه خالص، أيًا كان المشغّل اللي بيحاول
   var k=ttGk(l.dept,l.cls);if(data.cG[k]&&data.cG[k][a.day])data.cG[k][a.day][a.period]=-1;
   (l.teachers||[l.teacher]).forEach(function(t){if(t&&data.tG[t]&&data.tG[t][a.day])delete data.tG[t][a.day][a.period];});
   data.assign[lid]=null;
+}
+
+// ── بند 5 من خطة التطوير: قفل حقيقي صلب — بدل ما يكون "استخدام وقت معلم مقفول" مجرد عقوبة كبيرة
+// (30000) في دالة التقييم يقدر الخوارزمية تتجاوزها لو مفيش بديل، بقى استبعاد فعلي تام من
+// مساحة الحل: أي خانة المعلم فيها مقفول (غير متاح حسب إعداداته) أو مشغول فعليًا في قسم
+// تاني اتولّد جدوله قبل كده، متتفحصش أصلاً كخيار — لا في التوليد الأول ولا في التحسين (SA). ──
+function ttHardBlocked(data,lid,d,p){
+  var l=data.lessons[lid];var m=data.deptMeta[l.dept];if(!m)return true;
+  if(p>=(m.dayMax[d]!==undefined?m.dayMax[d]:m.nP)) return true; // برّه حدود اليوم أصلاً
+  var dn=m.days[d]||'';
+  // احترام القفل الحقيقي: ما تدوسش على خانة فصل مقفولة بحصة تانية
+  var k=ttGk(l.dept,l.cls);
+  var occC=data.cG[k]&&data.cG[k][d]?data.cG[k][d][p]:-1;
+  if(occC>=0&&occC!==lid&&data.lessons[occC]&&data.lessons[occC]._locked) return true;
+  return (l.teachers||[l.teacher]).some(function(t){
+    if(!t)return false;
+    var ts=S.timetableTeacherSettings&&S.timetableTeacherSettings[t];
+    if(ts&&ts.blocked&&ts.blocked.indexOf(dn+'_'+p)>=0) return true; // مقفول حسب إعداداته
+    var sb=m.sharedBlocked&&m.sharedBlocked[t];
+    if(sb&&sb.some(function(b){return b.dn===dn&&b.pi===p;})) return true; // مشغول فعليًا في قسم تاني
+    var occT=data.tG[t]&&data.tG[t][d]?data.tG[t][d][p]:-1; // معلم مقفول في حصة تانية بنفس الموعد
+    if(occT>=0&&occT!==lid&&data.lessons[occT]&&data.lessons[occT]._locked) return true;
+    return false;
+  });
 }
 
 // دالة التكلفة
@@ -7888,6 +8073,18 @@ function ttLC(data,lid,d,p){
       if(data.tG[t][d][pp]>=0&&+pp!==p)tc2++;
     });
     if(tc2>=maxT) s+=(tc2-maxT+1)*2000;
+
+    // ══ 2.ب توسيع قيود المعلم: حد أقصى للفجوات (gaps) بين أول وآخر حصة في اليوم — قيد تفضيلي اختياري ══
+    if(ts&&ts.maxGaps!=null){
+      var occPs=Object.keys(data.tG[t]&&data.tG[t][d]||{}).map(Number).filter(function(pp){return pp!==p;});
+      occPs.push(p);
+      if(occPs.length>=2){
+        occPs.sort(function(a,b){return a-b;});
+        var span=occPs[occPs.length-1]-occPs[0]+1;
+        var gaps=span-occPs.length;
+        if(gaps>ts.maxGaps) s+=(gaps-ts.maxGaps)*800;
+      }
+    }
 
     // ══ 3. توازن الحمل الأسبوعي (إضافة إحصائية) ══
     var weekTotal=0;
@@ -8122,7 +8319,11 @@ function showCustomConstraints(){
 
 function ttGreedy(data){
   ttIG(data);data.assign=data.lessons.map(function(){return null;});
-  var ord=data.lessons.map(function(_,i){return i;});
+  // ── بند 5 (تكملة): ثبّت الحصص المقفولة يدويًا في أماكنها الأصلية أولاً، قبل أي بحث عن مواضع ──
+  data.lessons.forEach(function(l,lid){
+    if(l._locked&&l._lockedPos) ttPL(data,lid,l._lockedPos.d,l._lockedPos.p);
+  });
+  var ord=data.lessons.map(function(_,i){return i;}).filter(function(i){return !data.lessons[i]._locked;});
   ord.sort(function(a,b){var la=data.lessons[a],lb=data.lessons[b];if(la.isSplit&&!lb.isSplit)return -1;if(!la.isSplit&&lb.isSplit)return 1;return 0;});
   ord.forEach(function(lid){
     var l=data.lessons[lid];var m=data.deptMeta[l.dept];if(!m)return;
@@ -8133,6 +8334,7 @@ function ttGreedy(data){
     var best={d:-1,p:-1,c:Infinity};
     var bestAny={d:-1,p:-1,c:Infinity}; // احتياطي لو فعلاً مفيش أي خانة بدون تصادم (حالة نادرة/مستحيلة رياضيًا)
     for(var d=0;d<m.nD;d++) for(var p=m.dayMax[d]-1;p>=0;p--){
+      if(ttHardBlocked(data,lid,d,p)) continue; // ← قفل حقيقي: استبعاد فعلي، مش عقوبة
       var c2=ttLC(data,lid,d,p);
       if(c2<bestAny.c) bestAny={d:d,p:p,c:c2};
       if(c2<HARD_CLASH_THRESHOLD && c2<best.c) best={d:d,p:p,c:c2};
@@ -8159,9 +8361,11 @@ function ttSA(data,T0,al,Tf,maxI,cb){
       T*=al;
       if(Math.random()<0.6){
         var lid=Math.floor(Math.random()*data.lessons.length);
+        if(data.lessons[lid]._locked) continue; // قفل حقيقي: ما نحاولش نحرك حصة مقفولة خالص
         var m=data.deptMeta[data.lessons[lid].dept];if(!m)continue;
         var nd=Math.floor(Math.random()*m.nD);
         var np=Math.floor(Math.random()*(m.dayMax[nd]||m.nP||8));
+        if(ttHardBlocked(data,lid,nd,np)) continue; // ← قفل حقيقي: ما نحاولش الخانة دي خالص
         var oA=data.assign[lid];var oC=oA?ttLC(data,lid,oA.day,oA.period):40000;
         ttRM(data,lid);var nC=ttLC(data,lid,nd,np);
         var delta=nC-oC;
@@ -8176,7 +8380,10 @@ function ttSA(data,T0,al,Tf,maxI,cb){
         var l1=Math.floor(Math.random()*data.lessons.length);
         var l2=Math.floor(Math.random()*data.lessons.length);
         if(data.assign[l1]&&data.assign[l2]&&data.lessons[l1].dept===data.lessons[l2].dept&&l1!==l2){
+          if(data.lessons[l1]._locked||data.lessons[l2]._locked) continue; // قفل حقيقي: ما نبدّلش حصة مقفولة خالص
           var a1=data.assign[l1],a2=data.assign[l2];
+          // ← قفل حقيقي: لو التبديل هيحط أي حصة في خانة مقفولة على معلمها، نتجاهل المحاولة دي خالص
+          if(ttHardBlocked(data,l1,a2.day,a2.period)||ttHardBlocked(data,l2,a1.day,a1.period)) continue;
           var oc1=ttLC(data,l1,a1.day,a1.period),oc2=ttLC(data,l2,a2.day,a2.period);
           ttRM(data,l1);ttRM(data,l2);
           var sc=ttLC(data,l1,a2.day,a2.period)+ttLC(data,l2,a1.day,a1.period);
@@ -8289,11 +8496,60 @@ function ttOpenCell(el){
   tsel.innerHTML='<option value="">— بلا معلم —</option>'+(S.teachers||[]).filter(function(t){return !isDeficitTeacher(t);}).map(function(t){return '<option value="'+t.name.replace(/"/g,'&quot;')+'">'+t.name+'</option>';}).join('');
   if(slot&&slot.teacher) tsel.value=slot.teacher;
   document.getElementById('ttCellModal').style.display='flex';
+  ttCheckCellConflict();
 }
 function ttCloseCell(){document.getElementById('ttCellModal').style.display='none';}
+
+// ── بند 2 من خطة التطوير: تحذير لوني وقت التعديل اليدوي — يفحص تعارض المعلم (مدرّس في فصل تاني بنفس الموعد) وقفل المعلم ──
+function ttGetCellConflicts(teacher,c){
+  var msgs=[];
+  if(!teacher||!c) return msgs;
+  var scfg=ttScfg(c.dept)||{};
+  var days=scfg.days||[];
+  var dayName=days[c.d]||'';
+  // 1) هل المعلم "مقفول" في اليوم/الحصة دي أصلاً حسب إعداداته؟
+  var ts=ttTset(teacher);
+  if(ts&&ts.blocked&&ts.blocked.indexOf(dayName+'_'+c.p)>=0){
+    msgs.push('🔒 المعلم مقفول (غير متاح) في هذا اليوم/الحصة أصلاً حسب إعداداته.');
+  }
+  // 2) هل المعلم بيدرّس بالفعل في نفس اليوم/الحصة في أي فصل تاني (نفس القسم أو قسم تاني)؟
+  Object.keys(S.generatedTimetable||{}).forEach(function(dept){
+    var res=S.generatedTimetable[dept];var tt=res&&res.timetable&&res.timetable[dept];
+    if(!tt) return;
+    Object.keys(tt).forEach(function(cid){
+      if(dept===c.dept&&cid===c.cid) return; // استبعاد نفس الخانة اللي بنعدلها
+      var slot=tt[cid]&&tt[cid][c.d]&&tt[cid][c.d][c.p];
+      if(slot&&slot.teacher===teacher){
+        var clsName=ttClsName(dept,+cid.replace('cls_',''));
+        msgs.push('⚠️ بيدرّس بالفعل «'+(slot.subj||'بدون مادة')+'» في «'+clsName+'» ('+dept+') بنفس اليوم والحصة.');
+      }
+    });
+  });
+  return msgs;
+}
+function ttCheckCellConflict(){
+  var warnEl=document.getElementById('ttCellConflictWarn');
+  if(!warnEl) return;
+  var c=TT.cell;
+  var teacher=document.getElementById('ttCellTeach').value;
+  if(!c||!teacher){warnEl.style.display='none';return;}
+  var msgs=ttGetCellConflicts(teacher,c);
+  warnEl.style.display='block';
+  if(msgs.length){
+    warnEl.style.background='#fef2f2';warnEl.style.border='1px solid #fca5a5';warnEl.style.color='#991b1b';
+    warnEl.innerHTML=msgs.map(function(m){return '<div>'+m+'</div>';}).join('');
+  } else {
+    warnEl.style.background='#f0fdf4';warnEl.style.border='1px solid #86efac';warnEl.style.color='#166534';
+    warnEl.innerHTML='✅ لا يوجد تعارض — المعلم فاضي في هذا الموعد.';
+  }
+}
 function ttSaveCell(){
   var c=TT.cell;var subj=document.getElementById('ttCellSubj').value;var teacher=document.getElementById('ttCellTeach').value;
   if(!S.generatedTimetable||!S.generatedTimetable[c.dept])return;
+  if(teacher){
+    var conflicts=ttGetCellConflicts(teacher,c);
+    if(conflicts.length && !confirm('⚠️ فيه تعارض في البيانات:\n\n'+conflicts.join('\n')+'\n\nتحفظ برضه؟')) return;
+  }
   var tt=S.generatedTimetable[c.dept].timetable;
   if(!tt||!tt[c.dept]||!tt[c.dept][c.cid])return;
   if(!tt[c.dept][c.cid][c.d])tt[c.dept][c.cid][c.d]={};
@@ -8476,7 +8732,10 @@ var _ttR=[
     removed.forEach(function(r){
       var l=data.lessons[r.lid];var m=data.deptMeta[l.dept];if(!m)return;
       var best={d:-1,p:-1,c:Infinity};
-      for(var d=0;d<m.nD;d++) for(var p=m.dayMax[d]-1;p>=0;p--){var c=ttLC(data,r.lid,d,p);if(c<best.c){best={d:d,p:p,c:c};}}
+      for(var d=0;d<m.nD;d++) for(var p=m.dayMax[d]-1;p>=0;p--){
+        if(ttHardBlocked(data,r.lid,d,p)) continue; // ← قفل حقيقي
+        var c=ttLC(data,r.lid,d,p);if(c<best.c){best={d:d,p:p,c:c};}
+      }
       if(best.d>=0)ttPL(data,r.lid,best.d,best.p);
     });
   },
@@ -8489,7 +8748,10 @@ var _ttR=[
       unplaced.forEach(function(r,i){
         var l=data.lessons[r.lid];var m=data.deptMeta[l.dept];if(!m)return;
         var costs=[];
-        for(var d=0;d<m.nD;d++) for(var p=0;p<m.dayMax[d];p++)costs.push(ttLC(data,r.lid,d,p));
+        for(var d=0;d<m.nD;d++) for(var p=0;p<m.dayMax[d];p++){
+          if(ttHardBlocked(data,r.lid,d,p)) continue; // ← قفل حقيقي
+          costs.push(ttLC(data,r.lid,d,p));
+        }
         costs.sort(function(a,b){return a-b;});
         var reg=(costs.length>1?costs[1]:costs[0]||0)-(costs[0]||0);
         if(reg>maxReg){maxReg=reg;bestIdx=i;}
@@ -8497,7 +8759,10 @@ var _ttR=[
       var r=unplaced.splice(bestIdx,1)[0];
       var l=data.lessons[r.lid];var m=data.deptMeta[l.dept];if(!m)continue;
       var best={d:-1,p:-1,c:Infinity};
-      for(var d=0;d<m.nD;d++) for(var p=m.dayMax[d]-1;p>=0;p--){var c=ttLC(data,r.lid,d,p);if(c<best.c){best={d:d,p:p,c:c};}}
+      for(var d=0;d<m.nD;d++) for(var p=m.dayMax[d]-1;p>=0;p--){
+        if(ttHardBlocked(data,r.lid,d,p)) continue; // ← قفل حقيقي
+        var c=ttLC(data,r.lid,d,p);if(c<best.c){best={d:d,p:p,c:c};}
+      }
       if(best.d>=0)ttPL(data,r.lid,best.d,best.p);
     }
   },
@@ -8519,6 +8784,7 @@ var _ttR=[
       var minZ=z[0]<z[1]?(z[0]<z[2]?0:2):(z[1]<z[2]?1:2);
       var best={d:-1,p:-1,c:Infinity};
       for(var d=0;d<m.nD;d++) for(var p=m.dayMax[d]-1;p>=0;p--){
+        if(ttHardBlocked(data,r.lid,d,p)) continue; // ← قفل حقيقي
         var c=ttLC(data,r.lid,d,p);
         if(m.zone[p]===minZ)c-=60;  // مكافأة للمنطقة المطلوبة
         if(c<best.c){best={d:d,p:p,c:c};}
@@ -8545,6 +8811,7 @@ var _ttR=[
       for(var d=0;d<m.nD;d++){
         var spread=usedDays[d]?500:0;  // عقوبة إضافية للأيام المستخدمة
         for(var p=m.dayMax[d]-1;p>=0;p--){
+          if(ttHardBlocked(data,r.lid,d,p)) continue; // ← قفل حقيقي
           var c=ttLC(data,r.lid,d,p)+spread;
           if(c<best.c){best={d:d,p:p,c:c};}
         }
@@ -8736,8 +9003,8 @@ function ttRenderTeacherView(dept,res,days,pers){
   var html='<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">'
     +'<table style="border-collapse:collapse;font-size:7pt;width:100%"><thead>'
     +'<tr style="background:#1a3a5c;color:#fff">'
-    +'<th style="padding:5px 8px;border:1px solid #2d5a8e;position:sticky;right:0;background:#1a3a5c;min-width:80px">المعلم</th>'
-    +days.map(function(d){return '<th colspan="'+pers.length+'" style="padding:5px 6px;border:1px solid #2d5a8e;text-align:center">'+d+'</th>';}).join('')
+    +'<th style="padding:5px 8px;border:1px solid #2d5a8e;position:sticky;right:0;background:#1a3a5c;min-width:80px">'+ttT('teacher')+'</th>'
+    +days.map(function(d){return '<th colspan="'+pers.length+'" style="padding:5px 6px;border:1px solid #2d5a8e;text-align:center">'+ttTDay(d)+'</th>';}).join('')
     +'</tr><tr style="background:#dbeafe">'
     +'<th style="border:1px solid #bfdbfe;position:sticky;right:0;background:#dbeafe"></th>'
     +days.map(function(_,di){return pers.map(function(p,pi){
@@ -8772,7 +9039,7 @@ function ttRenderTeacherView(dept,res,days,pers){
           var entry=entries[0];
           var slot=entry.slot;
           var clsName=ttClsName(dept,entry.ci);
-          var sShort=(slot.subj||'').substring(0,5);
+          var sShort=ttTSubj(slot.subj||'').substring(0,5);
           var bg=slot.isSplit?ttSubjColorLight(slot.subj):ttSubjColorLight(slot.subj);
           var border='border-right:3px solid '+ttSubjColor(slot.subj)+';';
           html+='<td style="padding:2px 3px;border:1px solid #e5e7eb;text-align:center;background:'+bg+';'+bdr+border+'">'
@@ -8860,10 +9127,13 @@ function ttPrint(){
   var win=window.open('','_blank');
   if(!win){toast('⚠ أذن النوافذ المنبثقة مطلوب');return;}
 
-  var html='<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">'
-    +'<title>جدول '+dept+'</title>'
+  var pDir=(_ttI18n[_ttLang]||_ttI18n.ar).dir||'rtl';
+  var pLangAttr=_ttLang==='ar'?'ar':_ttLang;
+  var dateLocale=_ttLang==='ar'?'ar':_ttLang==='fr'?'fr':'en';
+  var html='<!DOCTYPE html><html lang="'+pLangAttr+'" dir="'+pDir+'"><head><meta charset="UTF-8">'
+    +'<title>'+ttT('timetable')+' - '+dept+'</title>'
     +'<style>'
-    +'body{font-family:Cairo,Tajawal,sans-serif;font-size:8pt;direction:rtl;margin:10px}'
+    +'body{font-family:Cairo,Tajawal,sans-serif;font-size:8pt;direction:'+pDir+';margin:10px}'
     +'h2{text-align:center;color:#1a3a5c;margin:0 0 8px}'
     +'.meta{text-align:center;color:#6b7280;font-size:7.5pt;margin-bottom:10px}'
     +'table{width:100%;border-collapse:collapse;font-size:7pt}'
@@ -8874,10 +9144,10 @@ function ttPrint(){
     +'.cls-lbl{font-weight:700;color:#1a3a5c;background:#f1f5f9;text-align:right;padding:3px 6px}'
     +'@media print{@page{size:A4 landscape;margin:8mm}}'
     +'</style></head><body>'
-    +'<h2>جدول '+dept+'</h2>'
-    +'<div class="meta">'+new Date().toLocaleDateString('ar')+'</div>'
+    +'<h2>'+ttT('timetable')+' - '+dept+'</h2>'
+    +'<div class="meta">'+new Date().toLocaleDateString(dateLocale)+'</div>'
     +'<table><thead>'
-    +'<tr><th>الفصل</th>'+days.map(function(d){return '<th colspan="'+pers.length+'">'+d+'</th>';}).join('')+'</tr>'
+    +'<tr><th>'+ttT('class')+'</th>'+days.map(function(d){return '<th colspan="'+pers.length+'">'+ttTDay(d)+'</th>';}).join('')+'</tr>'
     +'<tr><th></th>'+days.map(function(_,di){return pers.map(function(p,pi){return '<th'+(pi===0&&di>0?' class="day-sep"':'')+'>'+p.name+'</th>';}).join('');}).join('')+'</tr>'
     +'</thead><tbody>';
 
@@ -8889,7 +9159,7 @@ function ttPrint(){
         var slot=tt[cid][d]&&tt[cid][d][p];
         if(slot){
           var color=ttSubjColor(slot.subj||'');
-          var sShort=(slot.subj||'').substring(0,6);
+          var sShort=ttTSubj(slot.subj||'').substring(0,6);
           var tShort=slot.teacher?slot.teacher.split(' ').slice(-1)[0]:'';
           html+='<td'+bdr+' style="background:'+color+'22;border-right:2px solid '+color+'">'
             +'<div style="font-weight:700;font-size:7pt">'+sShort+'</div>'
@@ -9032,9 +9302,9 @@ function ttViewSummary(dept,res,days,pers,tt,classIds){
     +'<table style="border-collapse:collapse;font-size:6.5pt;width:100%"><thead>'
     // رأس الأيام
     +'<tr style="background:#1a3a5c;color:#fff">'
-    +'<th style="padding:4px 6px;border:1px solid #2d5a8e;position:sticky;right:0;background:#1a3a5c;min-width:44px;font-size:7pt">الفصل</th>';
+    +'<th style="padding:4px 6px;border:1px solid #2d5a8e;position:sticky;right:0;background:#1a3a5c;min-width:44px;font-size:7pt">'+ttT('class')+'</th>';
   days.forEach(function(d,di){
-    html+='<th colspan="'+pers.length+'" style="padding:4px 6px;border:1px solid #2d5a8e;text-align:center;border-right:'+(di>0?'3px solid #fff':'1px solid #2d5a8e')+'">'+d+'</th>';
+    html+='<th colspan="'+pers.length+'" style="padding:4px 6px;border:1px solid #2d5a8e;text-align:center;border-right:'+(di>0?'3px solid #fff':'1px solid #2d5a8e')+'">'+ttTDay(d)+'</th>';
   });
   html+='</tr><tr style="background:#dbeafe">'
     +'<th style="border:1px solid #bfdbfe;position:sticky;right:0;background:#dbeafe"></th>';
@@ -9056,7 +9326,7 @@ function ttViewSummary(dept,res,days,pers,tt,classIds){
         var locked=ttIsLocked(dept,cid,d,p);
         if(slot){
           var color=ttSubjColor(slot.subj||'');
-          var s=(slot.subj||'').substring(0,4);
+          var s=ttTSubj(slot.subj||'').substring(0,4);
           var tParts=slot.teacher?(slot.teacher.split(' ')):[]; var t=tParts.length>=2?tParts[0]+' '+tParts[1]:(tParts[0]||'');
           html+='<td class="tt-cell" style="padding:1px 2px;border:1px solid #e5e7eb;text-align:center;background:'+color+'20;border-right:2px solid '+color+';cursor:pointer;'+bdr+'"'
             +' data-ci="'+ci+'" data-cid="'+cid+'" data-d="'+d+'" data-p="'+p+'"'
@@ -9108,7 +9378,7 @@ function ttViewSingleClass(dept,res,days,pers,tt,classIds,clsIdx){
     +'<div style="overflow-x:auto;padding:8px">'
     +'<table style="width:100%;border-collapse:collapse;font-size:8pt">'
     +'<thead><tr style="background:#f1f5f9">'
-    +'<th style="padding:6px 10px;border:1px solid #e2e8f0;min-width:55px;text-align:right">اليوم</th>';
+    +'<th style="padding:6px 10px;border:1px solid #e2e8f0;min-width:55px;text-align:right">'+ttT('day')+'</th>';
   // أضف الاستراحة في المكان الصحيح
   var allPers=scfg.periods||[];
   allPers.forEach(function(p){
@@ -9122,7 +9392,7 @@ function ttViewSingleClass(dept,res,days,pers,tt,classIds,clsIdx){
 
   days.forEach(function(day,di){
     html+='<tr style="background:'+(di%2?'#f8fafc':'#fff')+'">'
-      +'<td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:700;color:#1a3a5c;white-space:nowrap;font-size:9pt">'+day+'</td>';
+      +'<td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:700;color:#1a3a5c;white-space:nowrap;font-size:9pt">'+ttTDay(day)+'</td>';
     var pi=0; // فهرس الحصة الحقيقية
     allPers.forEach(function(p){
       if(p.isBreak){
@@ -9175,7 +9445,7 @@ function ttViewSingleTeacher(dept,res,days,pers,tt,tName){
     +'</div>'
     +'<div style="overflow-x:auto;padding:8px">'
     +'<table style="width:100%;border-collapse:collapse;font-size:8pt"><thead>'
-    +'<tr style="background:#f1f5f9"><th style="padding:6px 10px;border:1px solid #e2e8f0;min-width:55px;text-align:right">اليوم</th>';
+    +'<tr style="background:#f1f5f9"><th style="padding:6px 10px;border:1px solid #e2e8f0;min-width:55px;text-align:right">'+ttT('day')+'</th>';
   allPers.forEach(function(p){
     if(p.isBreak) html+='<th style="padding:4px;border:1px solid #e2e8f0;background:#fef9c3;min-width:40px;text-align:center;font-size:7pt">☕<br>'+p.name+'</th>';
     else html+='<th style="padding:4px;border:1px solid #e2e8f0;min-width:65px;text-align:center"><div class="u-fw7">'+p.name+'</div>'+(p.start?'<div style="font-size:6pt;color:#6b7280">'+p.start+'</div>':'')+'</th>';
@@ -9185,7 +9455,7 @@ function ttViewSingleTeacher(dept,res,days,pers,tt,tName){
   var classIds=Object.keys(tt).sort(function(a,b){return +a.split('_')[1]-(+b.split('_')[1]);});
   days.forEach(function(day,di){
     html+='<tr style="background:'+(di%2?'#f8fafc':'#fff')+'">'
-      +'<td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:700;color:#1a3a5c;white-space:nowrap;font-size:9pt">'+day+'</td>';
+      +'<td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:700;color:#1a3a5c;white-space:nowrap;font-size:9pt">'+ttTDay(day)+'</td>';
     var pi=0;
     allPers.forEach(function(p){
       if(p.isBreak){html+='<td style="border:1px solid #e2e8f0;background:#fef9c3;text-align:center">☕</td>';return;}
@@ -9199,7 +9469,7 @@ function ttViewSingleTeacher(dept,res,days,pers,tt,tName){
         var sl=found.sl;var color=ttSubjColor(sl.subj||'');var clsName=ttClsName(dept,found.ci);
         html+='<td class="tt-cell" style="padding:5px 4px;border:1px solid #e2e8f0;text-align:center;background:'+color+'18;border-top:3px solid '+color+';cursor:pointer"'
           +' title="'+( sl.subj||'')+' — '+clsName+'">'
-          +'<div style="font-size:8.5pt;font-weight:700;color:#1a3a5c">'+( sl.subj||'')+'</div>'
+          +'<div style="font-size:8.5pt;font-weight:700;color:#1a3a5c">'+ttTSubj(sl.subj||'')+'</div>'
           +'<div style="font-size:7pt;color:#6b7280">'+clsName+'</div>'
           +'</td>';
       } else {
@@ -9245,7 +9515,7 @@ function ttPrintPreview(){
     pages+='</tr></thead><tbody>';
     var pi_real=0;
     days.forEach(function(day,di){
-      pages+='<tr><td class="day-cell">'+day+'</td>';
+      pages+='<tr><td class="day-cell">'+ttTDay(day)+'</td>';
       var pi2=0;
       allPers.forEach(function(p){
         if(p.isBreak){pages+='<td class="break-cell">☕</td>';return;}
@@ -9254,7 +9524,7 @@ function ttPrintPreview(){
         if(slot){
           var color=ttSubjColor(slot.subj||'');
           pages+='<td style="background:'+color+'22;border-top:3px solid '+color+'">'+(locked?'🔒 ':'')
-            +'<div class="subj">'+( slot.subj||'')+'</div>'
+            +'<div class="subj">'+ttTSubj(slot.subj||'')+'</div>'
             +'<div class="teach">'+( slot.teacher||'')+'</div>'
             +(slot.isSplit?'<div class="split">مجموعات</div>':'')
             +'</td>';
@@ -9266,14 +9536,16 @@ function ttPrintPreview(){
       pages+='</tr>';
     });
     pages+='</tbody></table>'
-      +'<div class="footer">Lycée Al-Horreya — '+new Date().toLocaleDateString('ar')+'</div>'
+      +'<div class="footer">Lycée Al-Horreya — '+new Date().toLocaleDateString(_ttLang==='ar'?'ar':_ttLang==='fr'?'fr':'en')+'</div>'
       +'</div>';
   });
 
-  var html='<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>جداول '+dept+'</title>'
+  var pDir=(_ttI18n[_ttLang]||_ttI18n.ar).dir||'rtl';
+  var pLangAttr=_ttLang==='ar'?'ar':_ttLang;
+  var html='<!DOCTYPE html><html lang="'+pLangAttr+'" dir="'+pDir+'"><head><meta charset="UTF-8"><title>'+ttT('timetable')+' '+dept+'</title>'
     +'<style>'
     +'*{box-sizing:border-box}'
-    +'body{font-family:Cairo,Tajawal,sans-serif;margin:0;direction:rtl;background:#e5e7eb}'
+    +'body{font-family:Cairo,Tajawal,sans-serif;margin:0;direction:'+pDir+';background:#e5e7eb}'
     // شريط الطباعة
     +'#toolbar{position:fixed;top:0;left:0;right:0;background:#1a3a5c;color:#fff;padding:8px 16px;display:flex;align-items:center;gap:8px;z-index:100;flex-wrap:wrap}'
     +'#toolbar button{padding:5px 14px;border-radius:6px;border:none;cursor:pointer;font-family:Cairo,sans-serif;font-size:9pt}'
@@ -9859,22 +10131,36 @@ function ttAnalyzeFeasibility(dept,cfg){
     });
   });
 
-  // فحص الفتحات المتاحة لكل معلم
+  // ── تصحيح: الحمل المطلوب لازم يكون الإجمالي عبر كل الأقسام اللي بيدرّس فيها المعلم،
+  //    مش بس داخل القسم ده — معلم موزّع على 4 أقسام حمله الحقيقي هو مجموعهم كلهم ──
+  Object.keys(teacherLoad).forEach(function(tName){
+    var t=(S.teachers||[]).find(function(x){return x.name===tName;});
+    if(t){
+      var totalReq=calcActualLoad(t); // مجموع الحصص المطلوبة من المعلم في كل الأقسام
+      teacherLoad[tName].requiredInDept=teacherLoad[tName].required; // نحتفظ بالرقم الأصلي (داخل القسم بس) للعرض
+      teacherLoad[tName].required=totalReq;
+    }
+  });
+
+  // فحص الفتحات المتاحة لكل معلم — بعد استبعاد الحصص اللي المعلم مشغول فيها فعليًا
+  // في أقسام تانية (لو جداولها اتولّدت بالفعل) بنفس اليوم/رقم الحصة
   Object.keys(teacherLoad).forEach(function(tName){
     var ts=(S.timetableTeacherSettings||{})[tName]||{};
     var maxPD=ts.maxPerDay||5;
     var blocked=ts.blocked||[];
+    var busyElsewhere=ttTeacherBusyElsewhere(tName,dept);
     var available=0;
     days.forEach(function(d,di){
       var dayMax=dpc[d]!==undefined?dpc[d]:pers.length;
       var usedInDay=0;
       for(var p=0;p<dayMax;p++){
-        if(blocked.indexOf(d+'_'+p)<0) usedInDay++;
+        if(blocked.indexOf(d+'_'+p)<0 && !busyElsewhere.has(di+'_'+p)) usedInDay++;
       }
       available+=Math.min(usedInDay,maxPD);
     });
     teacherLoad[tName].available=available;
     teacherLoad[tName].blocked=blocked.length;
+    teacherLoad[tName].busyElsewhere=busyElsewhere.size;
   });
 
   // فحص الفصول
@@ -9886,13 +10172,14 @@ function ttAnalyzeFeasibility(dept,cfg){
   // إنتاج التقرير
   Object.values(teacherLoad).forEach(function(tl){
     if(tl.required>tl.available){
+      var extra=tl.busyElsewhere?(' ('+tl.busyElsewhere+' حصة منها مشغولة في أقسام تانية)'):'';
       issues.push({
         type:'teacher_overload',
         teacher:tl.name,
         required:tl.required,
         available:tl.available,
         excess:tl.required-tl.available,
-        msg:'المعلم '+tl.name+' يحتاج '+tl.required+' حصة لكن لديه '+tl.available+' فتحة متاحة (فائض: '+(tl.required-tl.available)+')'
+        msg:'المعلم '+tl.name+' يحتاج '+tl.required+' حصة (إجمالي كل الأقسام) لكن لديه '+tl.available+' فتحة متاحة هنا'+extra+' (فائض: '+(tl.required-tl.available)+')'
       });
     } else if(tl.required>tl.available*0.85){
       warnings.push('المعلم '+tl.name+': نسبة استخدام '+(Math.round(tl.required/tl.available*100))+'% (قريب من الحد)');
@@ -9909,6 +10196,27 @@ function ttAnalyzeFeasibility(dept,cfg){
 
   return {feasible:feasible,issues:issues,warnings:warnings,
     totalSlots:totalSlots,classLoad:classLoad,efficiency:efficiency,teacherLoad:teacherLoad};
+}
+// يحسب الحصص اللي المعلم "مشغول" فيها فعليًا في أقسام تانية (لو جداولها اتولّدت بالفعل)،
+// كمجموعة مفاتيح 'رقم اليوم_رقم الحصة' — يُستخدم لحساب الفتحات المتاحة الحقيقية عبر الأقسام
+function ttTeacherBusyElsewhere(tName,dept){
+  var busy=new Set();
+  Object.keys(S.generatedTimetable||{}).forEach(function(d2){
+    if(d2===dept) return;
+    var res=S.generatedTimetable[d2];var tt=res&&res.timetable&&res.timetable[d2];
+    if(!tt) return;
+    Object.keys(tt).forEach(function(cid){
+      var byDay=tt[cid]||{};
+      Object.keys(byDay).forEach(function(dayIdx){
+        var byPer=byDay[dayIdx]||{};
+        Object.keys(byPer).forEach(function(perIdx){
+          var slot=byPer[perIdx];
+          if(slot&&slot.teacher===tName) busy.add(dayIdx+'_'+perIdx);
+        });
+      });
+    });
+  });
+  return busy;
 }
 
 // عرض تقرير الجدوى
@@ -10221,6 +10529,510 @@ function ttShowFeasibilityModal(){
   });
   content.innerHTML=html||'<p style="color:#aaa;text-align:center;padding:20px">لا توجد أقسام مع توقيتات</p>';
   document.getElementById('ttFeasibModal').style.display='flex';
+}
+
+// ── بند 4 من خطة التطوير: تحليل نقاط الاختناق (Bottleneck Analysis) — زرار دائم ──
+// مين المعلمين اللي مساحة حركتهم أضيق فعليًا: حمل أسبوعي عالي + موزّع على أقسام كتير
+// (أي تعارض جدولة في أي قسم من أقسامه بيأثر على الباقي كلهم) — دول اللي يستاهلوا يتولّد جدولهم الأول
+function ttBottleneckAnalysis(){
+  var results=[];
+  (S.teachers||[]).forEach(function(t){
+    if(isDeficitTeacher(t))return;
+    var hours=calcActualLoad(t);
+    if(hours<=0)return;
+    var depts=new Set((t.assignments||[]).map(function(a){return a.dept;}));
+    var legal=getLegalLoad(t);
+    results.push({name:t.name,degree:t.degree||'',hours:hours,deptCount:depts.size,depts:Array.from(depts),legal:legal});
+  });
+  // ترتيب حسب الخطورة: حمل عالي + توزيع على أقسام كتير = أعلى خطر
+  results.sort(function(a,b){return (b.hours*b.deptCount)-(a.hours*a.deptCount);});
+  return results.slice(0,15); // أعلى 15 نقطة اختناق
+}
+function ttShowBottleneckModal(){
+  var results=ttBottleneckAnalysis();
+  var content=document.getElementById('ttBottleneckContent');
+  if(!content)return;
+  if(!results.length){
+    content.innerHTML='<p style="color:#aaa;text-align:center;padding:20px">لا توجد بيانات كافية — لازم يكون في معلمين ليهم حصص معيّنة أولاً</p>';
+  } else {
+    var html='<div style="font-size:8pt;color:#666;margin-bottom:10px">أعلى '+results.length+' معلم من حيث خطورة التعارض — حمل عالي + توزيع على أقسام كتير = مساحة حركة أضيق، يستاهل تولّد جدوله الأول عشان مايتحاصرش.</div>';
+    html+='<div style="display:flex;flex-direction:column;gap:6px">';
+    results.forEach(function(r,i){
+      var over=r.legal!=null&&r.hours>r.legal;
+      html+='<div style="border:1px solid '+(over?'#fca5a5':'#e5e7eb')+';border-radius:8px;padding:8px 10px;background:'+(over?'#fef2f2':'#f9fafb')+'">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">'
+        +'<span style="font-weight:700;font-size:8.5pt;color:#1a3a5c">#'+(i+1)+' '+r.name+'</span>'
+        +'<span style="font-size:7.5pt;color:#7c2d12;font-weight:700;white-space:nowrap">'+r.hours+' حصة / '+r.deptCount+' أقسام</span>'
+        +'</div>'
+        +'<div style="font-size:7.5pt;color:#666;margin-top:3px">'+r.depts.join('، ')
+        +(over?' — <span style="color:#991b1b;font-weight:700">فوق النصاب القانوني ('+r.legal+')</span>':'')
+        +'</div></div>';
+    });
+    html+='</div>';
+    content.innerHTML=html;
+  }
+  document.getElementById('ttBottleneckModal').style.display='flex';
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  بند 6 من خطة التطوير: نظام تغطية الغياب (Substitutions)      ║
+// ║  تسجيل غياب معلم → الحصص المتأثرة تلقائيًا عبر كل الأقسام →   ║
+// ║  اقتراح بدلاء فاضيين فعليًا (بنفس منطق مرشحي سد العجز) →       ║
+// ║  قرار لكل حصة (بديل/إلغاء) يُحفظ كتغيير خاص باليوم ده بس،      ║
+// ║  من غير ما يمسّ الجدول الأسبوعي الأصلي المولَّد خالص ──        ║
+// ╚══════════════════════════════════════════════════════════════╝
+var _ttCoverWeekdays=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+function ttWeekdayName(dateStr){
+  if(!dateStr) return '';
+  var parts=dateStr.split('-'); if(parts.length!==3) return '';
+  var dt=new Date(+parts[0],+parts[1]-1,+parts[2]);
+  return _ttCoverWeekdays[dt.getDay()]||'';
+}
+
+// كل الحصص اللي المعلم ده بيدرّسها يوم [اسم اليوم] ده، عبر كل الأقسام
+function ttCoverFindAffected(teacher,dateStr){
+  var dayName=ttWeekdayName(dateStr);
+  if(!dayName||!teacher) return [];
+  var cfg=ttCfg();
+  var out=[];
+  (S.departments||[]).forEach(function(dept){
+    var res=S.generatedTimetable&&S.generatedTimetable[dept];
+    var tt=res&&res.timetable&&res.timetable[dept];
+    if(!tt) return;
+    var scfg=(cfg.sections&&cfg.sections[dept])||{};
+    var days=scfg.days||[];
+    var d=days.indexOf(dayName);
+    if(d<0) return; // القسم ده مالوش حصص في اليوم ده أصلاً
+    Object.keys(tt).forEach(function(cid){
+      var byDay=tt[cid]&&tt[cid][d];
+      if(!byDay) return;
+      Object.keys(byDay).forEach(function(pKey){
+        var slot=byDay[pKey];
+        if(!slot) return;
+        var isTeacher=(slot.teacher===teacher)||(slot.teachers&&slot.teachers.indexOf(teacher)>=0);
+        if(!isTeacher) return;
+        out.push({dept:dept,cid:cid,cls:+String(cid).replace('cls_',''),d:d,p:+pKey,subj:slot.subj,dayName:dayName});
+      });
+    });
+  });
+  out.sort(function(a,b){return a.p-b.p;});
+  return out;
+}
+
+// مرشحون بديلون فاضيون فعليًا في نفس اليوم/الحصة عبر كل الأقسام — نفس المادة يتقدّم أولاً
+function ttCoverFindSubs(dayName,p,subjName,excludeTeacher){
+  var cfg=ttCfg();
+  var candidates=[];
+  (S.teachers||[]).forEach(function(t){
+    if(isDeficitTeacher(t))return;
+    if(t.name===excludeTeacher)return;
+    var ts=S.timetableTeacherSettings&&S.timetableTeacherSettings[t.name];
+    if(ts&&ts.blocked&&ts.blocked.indexOf(dayName+'_'+p)>=0) return; // مقفول أصلاً في الموعد ده
+    var busy=false;
+    (S.departments||[]).forEach(function(od){
+      if(busy)return;
+      var ocfg=(cfg.sections&&cfg.sections[od])||{};
+      var od_d=(ocfg.days||[]).indexOf(dayName);
+      if(od_d<0)return;
+      var ores=S.generatedTimetable&&S.generatedTimetable[od];
+      var ott=ores&&ores.timetable&&ores.timetable[od];
+      if(!ott)return;
+      Object.keys(ott).forEach(function(cid){
+        if(busy)return;
+        var slot=ott[cid]&&ott[cid][od_d]&&ott[cid][od_d][p];
+        if(slot&&(slot.teacher===t.name||(slot.teachers&&slot.teachers.indexOf(t.name)>=0))) busy=true;
+      });
+    });
+    if(busy)return;
+    var sameSubj=(t.assignments||[]).some(function(a){return subjMatch(a.subject,subjName);});
+    candidates.push({name:t.name,degree:t.degree||'',sameSubj:sameSubj});
+  });
+  candidates.sort(function(a,b){return (b.sameSubj?1:0)-(a.sameSubj?1:0);});
+  return candidates;
+}
+
+function ttShowCoverModal(){
+  var sel=document.getElementById('ttCoverTeacher');
+  if(sel){
+    var names=(S.teachers||[]).filter(function(t){return !isDeficitTeacher(t);}).map(function(t){return t.name;}).sort();
+    sel.innerHTML='<option value="">— اختر —</option>'+names.map(function(n){return '<option value="'+n.replace(/"/g,'&quot;')+'">'+n+'</option>';}).join('');
+  }
+  var dateEl=document.getElementById('ttCoverDate');
+  if(dateEl&&!dateEl.value){
+    var now=new Date();
+    dateEl.value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  }
+  document.getElementById('ttCoverContent').innerHTML='<p style="color:#aaa;text-align:center;padding:16px;font-size:8.5pt">اختر المعلم والتاريخ لعرض الحصص المتأثرة</p>';
+  document.getElementById('ttCoverSaveBar').style.display='none';
+  document.getElementById('ttCoverModal').style.display='flex';
+}
+
+function ttCoverSearch(){
+  var teacher=document.getElementById('ttCoverTeacher').value;
+  var dateStr=document.getElementById('ttCoverDate').value;
+  var content=document.getElementById('ttCoverContent');
+  var saveBar=document.getElementById('ttCoverSaveBar');
+  if(!teacher||!dateStr){
+    content.innerHTML='<p style="color:#aaa;text-align:center;padding:16px;font-size:8.5pt">اختر المعلم والتاريخ لعرض الحصص المتأثرة</p>';
+    saveBar.style.display='none';
+    return;
+  }
+  var affected=ttCoverFindAffected(teacher,dateStr);
+  if(!affected.length){
+    content.innerHTML='<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px;text-align:center;font-size:8.5pt;color:#166534">✅ المعلم مالوش أي حصص يوم '+ttWeekdayName(dateStr)+' — مفيش تغطية مطلوبة</div>';
+    saveBar.style.display='none';
+    return;
+  }
+  var prevActions=(S.timetableCoverActions&&S.timetableCoverActions[dateStr])||{};
+  var html='<div style="font-size:8pt;color:#666;margin-bottom:8px">'+affected.length+' حصة متأثرة يوم '+ttWeekdayName(dateStr)+' — اختر إجراء لكل حصة:</div>';
+  html+='<div style="display:flex;flex-direction:column;gap:8px">';
+  affected.forEach(function(a){
+    var key=a.dept+'|'+a.cid+'|'+a.d+'|'+a.p;
+    var prev=prevActions[key];
+    var subs=ttCoverFindSubs(a.dayName,a.p,a.subj,teacher);
+    var clsName=ttClsName(a.dept,a.cls);
+    html+='<div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;background:#f9fafb">'
+      +'<div style="font-weight:700;font-size:8.5pt;color:#1a3a5c">'+clsName+' ('+a.dept+') — '+a.subj+' — الحصة '+(a.p+1)+'</div>'
+      +'<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">'
+      +'<select class="ttCoverAction" data-key="'+key+'" onchange="ttCoverToggleSub(this)" style="padding:5px;border:1px solid #d1d5db;border-radius:6px;font-family:Cairo,sans-serif;font-size:8pt">'
+      +'<option value="">— اختر إجراء —</option>'
+      +'<option value="sub"'+(prev&&prev.action==='sub'?' selected':'')+'>👤 معلم بديل</option>'
+      +'<option value="cancel"'+(prev&&prev.action==='cancel'?' selected':'')+'>❌ إلغاء الحصة</option>'
+      +'</select>'
+      +'<select class="ttCoverSubSel" data-key="'+key+'" style="display:'+(prev&&prev.action==='sub'?'inline-block':'none')+';padding:5px;border:1px solid #d1d5db;border-radius:6px;font-family:Cairo,sans-serif;font-size:8pt">'
+      +(subs.length?subs.map(function(c){return '<option value="'+c.name.replace(/"/g,'&quot;')+'"'+(prev&&prev.subTeacher===c.name?' selected':'')+'>'+c.name+(c.sameSubj?' ⭐':'')+'</option>';}).join(''):'<option value="">لا يوجد معلم فاضي فعليًا</option>')
+      +'</select>'
+      +'</div></div>';
+  });
+  html+='</div>';
+  content.innerHTML=html;
+  saveBar.style.display='block';
+}
+
+function ttCoverToggleSub(sel){
+  var key=sel.dataset.key;
+  var subSel=document.querySelector('.ttCoverSubSel[data-key="'+key+'"]');
+  if(subSel) subSel.style.display=sel.value==='sub'?'inline-block':'none';
+}
+
+function ttCoverSave(){
+  var teacher=document.getElementById('ttCoverTeacher').value;
+  var dateStr=document.getElementById('ttCoverDate').value;
+  if(!teacher||!dateStr)return;
+  if(!S.timetableAbsences) S.timetableAbsences=[];
+  var exists=S.timetableAbsences.some(function(a){return a.teacher===teacher&&a.date===dateStr;});
+  if(!exists) S.timetableAbsences.push({id:'ab_'+Date.now(),date:dateStr,teacher:teacher,reason:''});
+  if(!S.timetableCoverActions) S.timetableCoverActions={};
+  if(!S.timetableCoverActions[dateStr]) S.timetableCoverActions[dateStr]={};
+  var savedCount=0;
+  document.querySelectorAll('.ttCoverAction').forEach(function(sel){
+    var key=sel.dataset.key;
+    var action=sel.value;
+    if(!action){ delete S.timetableCoverActions[dateStr][key]; return; }
+    var entry={action:action,teacher:teacher};
+    if(action==='sub'){
+      var subSel=document.querySelector('.ttCoverSubSel[data-key="'+key+'"]');
+      entry.subTeacher=subSel?subSel.value:'';
+      if(!entry.subTeacher) return; // ما يتحفظش من غير معلم بديل مختار
+    }
+    S.timetableCoverActions[dateStr][key]=entry;
+    savedCount++;
+  });
+  saveState();
+  toast('✅ اتحفظت خطة التغطية ('+savedCount+' حصة)');
+  document.getElementById('ttCoverModal').style.display='none';
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  نظام تحقق شامل بعد التوليد — يفصّل كل نوع مخالفة بالتفصيل     ║
+// ║  بدل ما يكتفي بعدد الـ conflicts زي ما كان الوضع قبل كده       ║
+// ╚══════════════════════════════════════════════════════════════╝
+function ttVerify(dept){
+  var out=[];
+  var cfg=ttCfg();
+  var scfg=(cfg.sections&&cfg.sections[dept])||{};
+  var days=scfg.days||[];
+  var res=S.generatedTimetable&&S.generatedTimetable[dept];
+  var tt=res&&res.timetable&&res.timetable[dept];
+  if(!res||!tt) return out;
+
+  // 1) تعارضات حقيقية + حصص لسه محتاجة تسكين يدوي (من نتيجة التوليد نفسها)
+  (res.conflicts||[]).forEach(function(cf){
+    if(cf.realClash){
+      out.push({type:'real_clash',severity:'critical',message:cf.subj,cellRef:cf.cid?{dept:dept,cid:cf.cid}:null});
+    } else {
+      out.push({type:'unplaced',severity:'critical',
+        message:'"'+cf.subj+'" لفصل '+ttClsName(dept,cf.cls)+' — '+cf.rem+' من '+cf.req+' حصة لسه محتاجة تسكين يدوي',
+        cellRef:{dept:dept,cid:cf.cid}});
+    }
+  });
+
+  Object.keys(tt).forEach(function(cid){
+    var cls=+String(cid).replace('cls_','');
+    for(var d=0;d<days.length;d++){
+      var byDay=tt[cid][d]||{};
+      var periods=Object.keys(byDay).map(Number).sort(function(a,b){return a-b;});
+      if(!periods.length) continue;
+
+      // 2) فجوة (window) في جدول الفصل نفسه — خانة فاضية بين خانتين مشغولتين بنفس اليوم
+      var minP=periods[0],maxP=periods[periods.length-1];
+      for(var p=minP+1;p<maxP;p++){
+        if(!byDay[p]){
+          out.push({type:'class_gap',severity:'warning',
+            message:'فصل '+ttClsName(dept,cls)+' — فجوة فاضية في الحصة '+(p+1)+' يوم '+(days[d]||'')+' (بين حصص مشغولة)',
+            cellRef:{dept:dept,cid:cid}});
+        }
+      }
+
+      // 3) مادة اتكررت أكتر من المسموح + 4) حصتان مزدوجتان مش متجاورتان
+      var subjPeriods={};
+      periods.forEach(function(p2){
+        var s2=byDay[p2]&&byDay[p2].subj; if(!s2)return;
+        if(!subjPeriods[s2]) subjPeriods[s2]=[];
+        subjPeriods[s2].push(p2);
+      });
+      Object.keys(subjPeriods).forEach(function(subjName){
+        var ps=subjPeriods[subjName];
+        var ss=ttSset(subjName);
+        if(ps.length>(ss.maxPerDay||2)){
+          out.push({type:'subject_repeat',severity:'warning',
+            message:'فصل '+ttClsName(dept,cls)+' — مادة "'+subjName+'" اتكررت '+ps.length+' مرات يوم '+(days[d]||'')+' (الحد '+(ss.maxPerDay||2)+')',
+            cellRef:{dept:dept,cid:cid}});
+        }
+        if(ps.length===2 && (ps[1]-ps[0])!==1){
+          out.push({type:'double_not_adjacent',severity:'info',
+            message:'فصل '+ttClsName(dept,cls)+' — حصتا "'+subjName+'" يوم '+(days[d]||'')+' في الحصة '+(ps[0]+1)+' و'+(ps[1]+1)+' (مش متجاورتين)',
+            cellRef:{dept:dept,cid:cid}});
+        }
+      });
+    }
+  });
+
+  // 5) معلم تخطى الحد المفضّل للحصص المتتالية (4)
+  var teacherDayPeriods={};
+  Object.keys(tt).forEach(function(cid){
+    for(var d=0;d<days.length;d++){
+      var byDay=tt[cid][d]||{};
+      Object.keys(byDay).forEach(function(pKey){
+        var slot=byDay[pKey]; if(!slot)return;
+        var tlist=slot.teachers&&slot.teachers.length?slot.teachers:[slot.teacher];
+        tlist.forEach(function(t){
+          if(!t)return;
+          var key=t+'|'+d;
+          if(!teacherDayPeriods[key]) teacherDayPeriods[key]=[];
+          teacherDayPeriods[key].push(+pKey);
+        });
+      });
+    }
+  });
+  Object.keys(teacherDayPeriods).forEach(function(key){
+    var parts=key.split('|'); var t=parts[0],d=+parts[1];
+    var ps=teacherDayPeriods[key].slice().sort(function(a,b){return a-b;});
+    var maxRun=1,curRun=1;
+    for(var i=1;i<ps.length;i++){
+      if(ps[i]-ps[i-1]===1) curRun++; else curRun=1;
+      if(curRun>maxRun)maxRun=curRun;
+    }
+    if(maxRun>4){
+      out.push({type:'teacher_consecutive',severity:'warning',
+        message:'المعلم "'+t+'" عنده '+maxRun+' حصص متتالية يوم '+(days[d]||''),
+        cellRef:{dept:dept}});
+    }
+  });
+
+  return out;
+}
+function ttGoToViolation(dept,cid){
+  TT.resDept=dept;
+  var sel=document.getElementById('ttResDeptSel'); if(sel) sel.value=dept;
+  document.getElementById('ttVerifyModal').style.display='none';
+  ttSwitch(4);
+}
+function ttShowVerifyModal(){
+  var depts=(S.departments||[]).filter(function(d){return S.generatedTimetable&&S.generatedTimetable[d];});
+  var content=document.getElementById('ttVerifyContent');
+  if(!content)return;
+  if(!depts.length){
+    content.innerHTML='<p style="color:#aaa;text-align:center;padding:20px">لسه مفيش جداول متولّدة</p>';
+    document.getElementById('ttVerifyModal').style.display='flex';
+    return;
+  }
+  var all=[];
+  depts.forEach(function(dept){ ttVerify(dept).forEach(function(v){v.dept=dept;all.push(v);}); });
+  var sevOrder={critical:0,warning:1,info:2};
+  all.sort(function(a,b){return (sevOrder[a.severity]||9)-(sevOrder[b.severity]||9);});
+  if(!all.length){
+    content.innerHTML='<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:14px;text-align:center;color:#166534;font-size:9pt">✅ مفيش أي مخالفات — الجداول كلها سليمة</div>';
+  } else {
+    var counts={critical:0,warning:0,info:0};
+    all.forEach(function(v){counts[v.severity]=(counts[v.severity]||0)+1;});
+    var html='<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">'
+      +'<span style="background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:6px;font-size:8pt;font-weight:700">🔴 حرج: '+counts.critical+'</span>'
+      +'<span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:6px;font-size:8pt;font-weight:700">🟠 تحذير: '+counts.warning+'</span>'
+      +'<span style="background:#e0f2fe;color:#075985;padding:4px 10px;border-radius:6px;font-size:8pt;font-weight:700">🔵 ملاحظة: '+(counts.info||0)+'</span>'
+      +'</div><div style="display:flex;flex-direction:column;gap:6px">';
+    var sevStyle={critical:{bg:'#fef2f2',bd:'#fca5a5',ic:'🔴'},warning:{bg:'#fffbeb',bd:'#fde68a',ic:'🟠'},info:{bg:'#f0f9ff',bd:'#bae6fd',ic:'🔵'}};
+    all.forEach(function(v){
+      var st=sevStyle[v.severity]||sevStyle.info;
+      html+='<div style="border:1px solid '+st.bd+';background:'+st.bg+';border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;gap:8px">'
+        +'<span style="font-size:8.2pt;color:#374151">'+st.ic+' ['+v.dept+'] '+v.message+'</span>'
+        +(v.cellRef&&v.cellRef.cid?'<button onclick="ttGoToViolation(\''+v.dept.replace(/'/g,"\\'")+'\',\''+v.cellRef.cid+'\')" style="padding:4px 10px;border:none;border-radius:6px;background:#1a3a5c;color:#fff;font-size:7.5pt;cursor:pointer;white-space:nowrap;flex-shrink:0">روح للخانة</button>':'')
+        +'</div>';
+    });
+    html+='</div>';
+    content.innerHTML=html;
+  }
+  document.getElementById('ttVerifyModal').style.display='flex';
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  نظام Advisor — فحص استباقي قبل التوليد، يكتشف أخطاء منطقية   ║
+// ║  محتملة في البيانات بدري بدل ما تتكشف بعد محاولة توليد ضايعة   ║
+// ╚══════════════════════════════════════════════════════════════╝
+function ttAdvisorCheck(){
+  var alerts=[];
+  var cfg=ttCfg();
+  var depts=(S.departments||[]).filter(function(d){return cfg.sections[d]&&(cfg.sections[d].periods||[]).some(function(p){return !p.isBreak;});});
+
+  depts.forEach(function(dept){
+    var scfg=cfg.sections[dept]||{};
+    var days=scfg.days||[];
+    if(!days.length) return;
+
+    // أ) مادة نصابها الأسبوعي أكبر من (عدد الأيام × الحد الأقصى المسموح بها في اليوم) — مستحيل رياضيًا
+    (S.subjects[dept]||[]).forEach(function(sub){
+      if(!(sub.weekly>0)) return;
+      var ss=ttSset(sub.name);
+      var cap=days.length*(ss.maxPerDay||2);
+      if(sub.weekly>cap){
+        alerts.push({dept:dept,severity:'critical',
+          message:'قسم "'+dept+'": مادة "'+sub.name+'" محتاجة '+sub.weekly+' حصة/أسبوع، لكن أقصى ممكن فعليًا (عدد الأيام '+days.length+' × الحد الأقصى/يوم '+(ss.maxPerDay||2)+') هو '+cap+' حصة بس — راجع النصاب أو ارفع الحد الأقصى/يوم للمادة'});
+      }
+    });
+
+    // ب) فصل عنده عدد حصص إجمالي مختلف عن باقي فصول نفس القسم
+    var maxCls=0;
+    (S.subjects[dept]||[]).forEach(function(sub){maxCls=Math.max(maxCls,sub.classes||0);});
+    if(maxCls>1){
+      var totals=[];
+      for(var c=0;c<maxCls;c++){
+        var tot=0;
+        (S.subjects[dept]||[]).forEach(function(sub){if((sub.classes||0)>c) tot+=sub.weekly||0;});
+        totals.push(tot);
+      }
+      var freq={};totals.forEach(function(tt2){freq[tt2]=(freq[tt2]||0)+1;});
+      var mode=+Object.keys(freq).sort(function(a,b){return freq[b]-freq[a];})[0];
+      totals.forEach(function(tot,c){
+        if(Math.abs(tot-mode)>=2){
+          alerts.push({dept:dept,severity:'warning',
+            message:'قسم "'+dept+'": فصل '+ttClsName(dept,c)+' عنده '+tot+' حصة/أسبوع إجمالي، بينما غالبية فصول القسم عندهم '+mode+' — راجع عدد الفصول (classes) لبعض المواد'});
+        }
+      });
+    }
+
+    // ج) عدد المعلمين المعيّنين فعليًا للقسم أقل من عدد الفصول — مؤشر خشن على نقص كادر
+    var seenT={};var teacherCount=0;
+    (S.teachers||[]).forEach(function(t){
+      if(isDeficitTeacher(t))return;
+      if((t.assignments||[]).some(function(a){return a.dept===dept&&(a.classes||0)>0;})&&!seenT[t.name]){seenT[t.name]=true;teacherCount++;}
+    });
+    if(maxCls>0 && teacherCount<maxCls){
+      alerts.push({dept:dept,severity:'warning',
+        message:'قسم "'+dept+'": عدد الفصول ('+maxCls+') أكبر من عدد المعلمين المعيّنين فعليًا ('+teacherCount+') — ممكن ميبقاش فيه معلم فاضي كفاية في بعض الأوقات'});
+    }
+  });
+
+  // د) معلم محمّل فوق طاقته فعليًا عبر كل الأقسام (من فحص الجدوى المصحَّح)
+  var seenOverload={};
+  depts.forEach(function(dept){
+    var r=ttAnalyzeFeasibility(dept,cfg);
+    r.issues.forEach(function(is){
+      if(is.type==='teacher_overload' && !seenOverload[is.teacher]){
+        seenOverload[is.teacher]=true;
+        alerts.push({dept:dept,severity:'critical',message:'المعلم "'+is.teacher+'": '+is.msg});
+      }
+    });
+  });
+
+  // هـ) قسم فيه حصص كتير مفيهاش أي معلم فاضي للاحتياطي لو حصل غياب مفاجئ
+  var busyByDayPeriod={};
+  Object.keys(S.generatedTimetable||{}).forEach(function(dept){
+    var res=S.generatedTimetable[dept];var tt2=res&&res.timetable&&res.timetable[dept];
+    if(!tt2)return;
+    var scfg2=(cfg.sections&&cfg.sections[dept])||{};
+    var days2=scfg2.days||[];
+    Object.keys(tt2).forEach(function(cid){
+      for(var d=0;d<days2.length;d++){
+        var byDay=tt2[cid][d];if(!byDay)continue;
+        Object.keys(byDay).forEach(function(pKey){
+          var slot=byDay[pKey];if(!slot)return;
+          var tlist=slot.teachers&&slot.teachers.length?slot.teachers:[slot.teacher];
+          tlist.forEach(function(t){
+            if(!t)return;
+            var key=days2[d]+'_'+pKey;
+            if(!busyByDayPeriod[key])busyByDayPeriod[key]={};
+            busyByDayPeriod[key][t]=true;
+          });
+        });
+      }
+    });
+  });
+  depts.forEach(function(dept){
+    if(!(S.generatedTimetable&&S.generatedTimetable[dept]))return; // بس الأقسام اللي اتولّدت
+    var scfg=cfg.sections[dept]||{};
+    var days=scfg.days||[];
+    var dpc=scfg.dayPeriodCounts||{};
+    var pers=(scfg.periods||[]).filter(function(pp){return !pp.isBreak;});
+    var deptTeacherNames=[];
+    (S.teachers||[]).forEach(function(t){
+      if(isDeficitTeacher(t))return;
+      if((t.assignments||[]).some(function(a){return a.dept===dept&&(a.classes||0)>0;})) deptTeacherNames.push(t.name);
+    });
+    if(!deptTeacherNames.length)return;
+    var zeroFreeCount=0,totalSlots=0;
+    days.forEach(function(dayName){
+      var dayMax=dpc[dayName]!==undefined?dpc[dayName]:pers.length;
+      for(var p=0;p<dayMax;p++){
+        totalSlots++;
+        var busy=busyByDayPeriod[dayName+'_'+p]||{};
+        var free=deptTeacherNames.some(function(tn){return !busy[tn];});
+        if(!free) zeroFreeCount++;
+      }
+    });
+    if(zeroFreeCount>0){
+      alerts.push({dept:dept,severity:'info',
+        message:'قسم "'+dept+'": '+zeroFreeCount+' من أصل '+totalSlots+' حصة/أسبوع مفيهاش أي معلم فاضي للاحتياطي لو حصل غياب مفاجئ'});
+    }
+  });
+
+  return alerts;
+}
+function ttShowAdvisorModal(){
+  var content=document.getElementById('ttAdvisorContent');
+  if(!content)return;
+  var alerts=ttAdvisorCheck();
+  var sevOrder={critical:0,warning:1,info:2};
+  alerts.sort(function(a,b){return (sevOrder[a.severity]||9)-(sevOrder[b.severity]||9);});
+  if(!alerts.length){
+    content.innerHTML='<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:14px;text-align:center;color:#166534;font-size:9pt">✅ مفيش أي مشاكل منطقية واضحة في البيانات — جاهز تولّد</div>';
+  } else {
+    var counts={critical:0,warning:0,info:0};
+    alerts.forEach(function(a){counts[a.severity]=(counts[a.severity]||0)+1;});
+    var html='<div style="font-size:8pt;color:#666;margin-bottom:8px">فحص للبيانات قبل التوليد — مش بديل عن فحص الجدوى، ده بيدوّر على أخطاء منطقية محتملة في الإعدادات نفسها.</div>';
+    html+='<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">'
+      +'<span style="background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:6px;font-size:8pt;font-weight:700">🔴 حرج: '+counts.critical+'</span>'
+      +'<span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:6px;font-size:8pt;font-weight:700">🟠 تحذير: '+counts.warning+'</span>'
+      +'<span style="background:#e0f2fe;color:#075985;padding:4px 10px;border-radius:6px;font-size:8pt;font-weight:700">🔵 ملاحظة: '+(counts.info||0)+'</span>'
+      +'</div><div style="display:flex;flex-direction:column;gap:6px">';
+    var sevStyle={critical:{bg:'#fef2f2',bd:'#fca5a5',ic:'🔴'},warning:{bg:'#fffbeb',bd:'#fde68a',ic:'🟠'},info:{bg:'#f0f9ff',bd:'#bae6fd',ic:'🔵'}};
+    alerts.forEach(function(a){
+      var st=sevStyle[a.severity]||sevStyle.info;
+      html+='<div style="border:1px solid '+st.bd+';background:'+st.bg+';border-radius:8px;padding:8px 10px;font-size:8.2pt;color:#374151">'+st.ic+' '+a.message+'</div>';
+    });
+    html+='</div>';
+    content.innerHTML=html;
+  }
+  document.getElementById('ttAdvisorModal').style.display='flex';
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -10600,54 +11412,66 @@ var _ttLang='ar'; // 'ar' | 'en' | 'fr'
 
 var _ttI18n={
   ar:{
-    days:{الأحد:'الأحد',الاثنين:'الاثنين',الثلاثاء:'الثلاثاء',الأربعاء:'الأربعاء',الخميس:'الخميس',الجمعة:'الجمعة'},
-    labels:{class:'الفصل',break:'استراحة',period:'حصة',teacher:'المعلم',subject:'المادة',timetable:'الجدول الدراسي',
+    dir:'rtl',
+    days:{الأحد:'الأحد',الاثنين:'الاثنين',الثلاثاء:'الثلاثاء',الأربعاء:'الأربعاء',الخميس:'الخميس',الجمعة:'الجمعة',السبت:'السبت'},
+    labels:{class:'الفصل',day:'اليوم',break:'استراحة',period:'حصة',teacher:'المعلم',subject:'المادة',timetable:'الجدول الدراسي',
       generated:'جداول مُولَّدة',allClasses:'كل الفصول',view:'عرض',print:'طباعة',generate:'توليد',
-      stats:'إحصائيات',undo:'تراجع',redo:'إعادة',excel:'Excel',report:'تقرير',
-      mon:'الاثنين',sun:'الأحد',tue:'الثلاثاء',wed:'الأربعاء',thu:'الخميس'},
-    subjMap:{}  // يُملأ تلقائياً من أسماء المواد
+      stats:'إحصائيات',undo:'تراجع',redo:'إعادة',excel:'Excel',report:'تقرير'},
+    subjMap:{}  // العربي مايحتاجش ترجمة — بيتعرض زي ما هو
   },
   en:{
-    days:{الأحد:'Sun',الاثنين:'Mon',الثلاثاء:'Tue',الأربعاء:'Wed',الخميس:'Thu',الجمعة:'Fri'},
-    labels:{class:'Class',break:'Break',period:'Period',teacher:'Teacher',subject:'Subject',
+    dir:'ltr',
+    days:{الأحد:'Sunday',الاثنين:'Monday',الثلاثاء:'Tuesday',الأربعاء:'Wednesday',الخميس:'Thursday',الجمعة:'Friday',السبت:'Saturday'},
+    labels:{class:'Class',day:'Day',break:'Break',period:'Period',teacher:'Teacher',subject:'Subject',
       timetable:'Class Timetable',generated:'Generated Timetables',allClasses:'All Classes',
       view:'View',print:'Print',generate:'Generate',stats:'Statistics',
       undo:'Undo',redo:'Redo',excel:'Excel',report:'Report'},
     subjMap:{
-      'رياضيات':'Math','عربي':'Arabic','اللغة العربية':'Arabic','إنجليزي':'English',
-      'اللغة الإنجليزية':'English','فرنسي':'French','اللغة الفرنسية':'French',
-      'علوم':'Science','فيزياء':'Physics','كيمياء':'Chemistry','أحياء':'Biology',
-      'تاريخ':'History','جغرافيا':'Geography','دراسات اجتماعية':'Social Studies',
-      'تربية دينية':'Religion','تربية وطنية':'Civic Ed','حاسب آلي':'Computer',
-      'تربية رياضية':'P.E.','تربية فنية':'Art','تربية موسيقية':'Music',
-      'نشاط':'Activity','مكتبة':'Library','كيمياء بيولوجيا':'Chem/Bio',
-      'اقتصاد':'Economics','احصاء':'Statistics','رياضة':'Sport',
-      'ديسكفر':'Discover','توكاتسو':'Tokukatsu','فلسفة':'Philosophy',
-      'جبر':'Algebra','هندسة':'Geometry','حساب':'Arithmetic'
+      'رياضيات':'Math','جبر':'Algebra','هندسة':'Geometry','حساب':'Arithmetic','إحصاء':'Statistics','احصاء':'Statistics',
+      'تفاضل وتكامل':'Calculus','مثلثات':'Trigonometry',
+      'لغة عربية':'Arabic','اللغة العربية':'Arabic','عربي':'Arabic','نحو':'Arabic Grammar','بلاغة':'Rhetoric','قراءة':'Reading','تعبير':'Composition',
+      'لغة إنجليزية':'English','اللغة الإنجليزية':'English','إنجليزي':'English','انجليزي':'English',
+      'لغة فرنسية':'French','اللغة الفرنسية':'French','فرنسي':'French','فرنساوي':'French',
+      'لغة ألمانية':'German','ألماني':'German','لغة إسبانية':'Spanish','إسباني':'Spanish',
+      'علوم':'Science','فيزياء':'Physics','كيمياء':'Chemistry','أحياء':'Biology','احياء':'Biology','كيمياء حيوية':'Biochemistry','كيمياء وأحياء':'Chem/Bio','علوم متكاملة':'Integrated Science','جيولوجيا':'Geology',
+      'تاريخ':'History','جغرافيا':'Geography','دراسات اجتماعية':'Social Studies','تربية وطنية':'Civic Education','فلسفة':'Philosophy','فلسفة ومنطق':'Philosophy & Logic','علم نفس':'Psychology','علم اجتماع':'Sociology',
+      'تربية دينية':'Religious Education','دين':'Religion','تربية إسلامية':'Islamic Education','تربية مسيحية':'Christian Education',
+      'حاسب آلي':'Computer Science','كمبيوتر':'Computer','تكنولوجيا المعلومات':'IT','معلوماتية':'ICT',
+      'تربية رياضية':'Physical Education','رياضة':'Sport','تربية فنية':'Art Education','فنون':'Art','رسم':'Drawing',
+      'تربية موسيقية':'Music','موسيقى':'Music','مسرح':'Drama',
+      'نشاط':'Activity','مكتبة':'Library','بحث':'Research','مشروع':'Project',
+      'اقتصاد':'Economics','اقتصاد منزلي':'Home Economics','محاسبة':'Accounting','تجارة':'Business',
+      'ديسكفر':'Discover','توكاتسو':'Tokukatsu','مهارات حياتية':'Life Skills','تفكير ناقد':'Critical Thinking'
     }
   },
   fr:{
-    days:{الأحد:'Dim',الاثنين:'Lun',الثلاثاء:'Mar',الأربعاء:'Mer',الخميس:'Jeu',الجمعة:'Ven'},
-    labels:{class:'Classe',break:'Récréation',period:'Heure',teacher:'Enseignant',subject:'Matière',
+    dir:'ltr',
+    days:{الأحد:'Dimanche',الاثنين:'Lundi',الثلاثاء:'Mardi',الأربعاء:'Mercredi',الخميس:'Jeudi',الجمعة:'Vendredi',السبت:'Samedi'},
+    labels:{class:'Classe',day:'Jour',break:'Récréation',period:'Heure',teacher:'Enseignant',subject:'Matière',
       timetable:'Emploi du temps',generated:'Emplois générés',allClasses:'Toutes les classes',
       view:'Vue',print:'Imprimer',generate:'Générer',stats:'Statistiques',
       undo:'Annuler',redo:'Rétablir',excel:'Excel',report:'Rapport'},
     subjMap:{
-      'رياضيات':'Mathématiques','عربي':'Arabe','اللغة العربية':'Arabe',
-      'إنجليزي':'Anglais','اللغة الإنجليزية':'Anglais',
-      'فرنسي':'Français','اللغة الفرنسية':'Français',
-      'علوم':'Sciences','فيزياء':'Physique','كيمياء':'Chimie','أحياء':'Biologie',
-      'تاريخ':'Histoire','جغرافيا':'Géographie','دراسات اجتماعية':'Éducation civique',
-      'تربية دينية':'Religion','حاسب آلي':'Informatique',
-      'تربية رياضية':'Sport','تربية فنية':'Arts','تربية موسيقية':'Musique',
-      'نشاط':'Activité','مكتبة':'Bibliothèque','اقتصاد':'Économie',
-      'ديسكفر':'Découvrir','فلسفة':'Philosophie',
-      'جبر':'Algèbre','هندسة':'Géométrie'
+      'رياضيات':'Mathématiques','جبر':'Algèbre','هندسة':'Géométrie','حساب':'Calcul','إحصاء':'Statistiques','احصاء':'Statistiques',
+      'تفاضل وتكامل':'Analyse','مثلثات':'Trigonométrie',
+      'لغة عربية':'Arabe','اللغة العربية':'Arabe','عربي':'Arabe','نحو':'Grammaire arabe','بلاغة':'Rhétorique','قراءة':'Lecture','تعبير':'Rédaction',
+      'لغة إنجليزية':'Anglais','اللغة الإنجليزية':'Anglais','إنجليزي':'Anglais','انجليزي':'Anglais',
+      'لغة فرنسية':'Français','اللغة الفرنسية':'Français','فرنسي':'Français','فرنساوي':'Français',
+      'لغة ألمانية':'Allemand','ألماني':'Allemand','لغة إسبانية':'Espagnol','إسباني':'Espagnol',
+      'علوم':'Sciences','فيزياء':'Physique','كيمياء':'Chimie','أحياء':'Biologie','احياء':'Biologie','كيمياء حيوية':'Biochimie','كيمياء وأحياء':'Chimie/Bio','علوم متكاملة':'Sciences Intégrées','جيولوجيا':'Géologie',
+      'تاريخ':'Histoire','جغرافيا':'Géographie','دراسات اجتماعية':'Éducation Civique','تربية وطنية':'Éducation Civique','فلسفة':'Philosophie','فلسفة ومنطق':'Philosophie & Logique','علم نفس':'Psychologie','علم اجتماع':'Sociologie',
+      'تربية دينية':'Religion','دين':'Religion','تربية إسلامية':'Éducation Islamique','تربية مسيحية':'Éducation Chrétienne',
+      'حاسب آلي':'Informatique','كمبيوتر':'Informatique','تكنولوجيا المعلومات':'TI','معلوماتية':'Informatique',
+      'تربية رياضية':'Éducation Physique','رياضة':'Sport','تربية فنية':'Arts Plastiques','فنون':'Arts','رسم':'Dessin',
+      'تربية موسيقية':'Musique','موسيقى':'Musique','مسرح':'Théâtre',
+      'نشاط':'Activité','مكتبة':'Bibliothèque','بحث':'Recherche','مشروع':'Projet',
+      'اقتصاد':'Économie','اقتصاد منزلي':'Économie Domestique','محاسبة':'Comptabilité','تجارة':'Commerce',
+      'ديسكفر':'Découverte','توكاتسو':'Tokukatsu','مهارات حياتية':'Compétences de Vie','تفكير ناقد':'Pensée Critique'
     }
   }
 };
 
-// ترجمة نص
+// ترجمة نص واجهة
 function ttT(key){
   var lang=_ttI18n[_ttLang]||_ttI18n.ar;
   return lang.labels[key]||_ttI18n.ar.labels[key]||key;
@@ -10656,17 +11480,27 @@ function ttTDay(day){
   var lang=_ttI18n[_ttLang]||_ttI18n.ar;
   return lang.days[day]||day;
 }
+// ترجمة اسم مادة — مطابقة بالاسم المُطبَّع (normAr) عشان تتحمّل فروق زي "ة/ه" و"أ/ا/إ/آ" و"ال" التعريف،
+// بدل المطابقة الحرفية الهشة اللي كانت موجودة قبل كده
 function ttTSubj(subj){
-  if(_ttLang==='ar') return subj;
+  if(_ttLang==='ar'||!subj) return subj;
   var lang=_ttI18n[_ttLang]||_ttI18n.ar;
-  // بحث مباشر
-  if(lang.subjMap[subj]) return lang.subjMap[subj];
-  // بحث جزئي
+  var nSubj=normAr(subj);
+  // مطابقة مباشرة (مُطبَّعة)
   var keys=Object.keys(lang.subjMap);
   for(var k=0;k<keys.length;k++){
-    if(subj.includes(keys[k])||keys[k].includes(subj)) return lang.subjMap[keys[k]];
+    if(normAr(keys[k])===nSubj) return lang.subjMap[keys[k]];
   }
-  return subj;
+  // مطابقة جزئية (مُطبَّعة) — أطول مفتاح مطابق أولاً عشان "لغة عربية" تتقدّم على "عربي" لو الاتنين موجودين
+  var bestKey=null;
+  keys.forEach(function(kk){
+    var nk=normAr(kk);
+    if((nSubj.indexOf(nk)>=0||nk.indexOf(nSubj)>=0)&&(!bestKey||nk.length>normAr(bestKey).length)){
+      bestKey=kk;
+    }
+  });
+  if(bestKey) return lang.subjMap[bestKey];
+  return subj; // مفيش ترجمة معروفة — يفضل زي ما هو بدل ما يختفي
 }
 
 // تغيير اللغة
@@ -11878,7 +12712,7 @@ function ttTabuSearch(data, maxIter, tabuSize, cb){
 // ══════════════════════════════════════════════════════════════
 // المرحلة 3: Genetic Algorithm (Population = 5 حلول)
 // ══════════════════════════════════════════════════════════════
-function ttGeneticAlgorithm(data, generations, popSize, cb){
+function ttGeneticAlgorithm(data, generations, popSize, cb, onProgress){
   var _gaSafeCb = cb;
   cb = function(r){ try{ _gaSafeCb(r); }catch(e){ console.error('[GA] cb error:', e); } };
   generations = generations || 3;
@@ -11920,8 +12754,8 @@ function ttGeneticAlgorithm(data, generations, popSize, cb){
       });
     });
 
-    if(typeof ttGenProg==='function')
-      ttGenProg(65+popDone*8, '🧬 GA فرد '+(popDone+1)+'/'+popSize+'...');
+    if(onProgress)
+      onProgress(65+popDone*8, '🧬 GA فرد '+(popDone+1)+'/'+popSize+'...');
 
     ttSA(indData, 60, 0.997, 0.5, 3000, function(){
       try{
@@ -11939,7 +12773,7 @@ function ttGeneticAlgorithm(data, generations, popSize, cb){
   }
 
   function evolve(){
-    if(typeof ttGenProg==='function') ttGenProg(80, '🧬 GA تطور...');
+    if(onProgress) onProgress(80, '🧬 GA تطور...');
 
     for(var g=0; g<generations; g++){
       var sorted = fitnesses.map(function(f,i){return {f:f,i:i};})
@@ -11953,6 +12787,7 @@ function ttGeneticAlgorithm(data, generations, popSize, cb){
 
       // طفرة خفيفة 3%
       for(var j=0; j<child.length; j++){
+        if(data.lessons[j]._locked) continue; // ← قفل حقيقي: الطفرة الوراثية ما تلمسوش خالص
         if(Math.random()<0.03){
           var m=data.deptMeta[data.lessons[j].dept];
           if(m) child[j]={day:Math.floor(Math.random()*m.nD),
@@ -11969,8 +12804,12 @@ function ttGeneticAlgorithm(data, generations, popSize, cb){
       // ── إصلاح حرج: أعد بناء الشبكة (cG/tG) لتطابق التعيين الجديد ──
       data.assign = new Array(data.lessons.length).fill(null);
       ttIG(data);
+      // ← قفل حقيقي: ثبّت الحصص المقفولة في مكانها الأصلي أولاً، قبل أي حصة تانية من نتيجة الـ GA
+      data.lessons.forEach(function(l,lid){
+        if(l._locked&&l._lockedPos) ttPL(data,lid,l._lockedPos.d,l._lockedPos.p);
+      });
       population[bestIdx].forEach(function(a,i){
-        if(a) ttPL(data,i,a.day,a.period);
+        if(a&&!data.lessons[i]._locked) ttPL(data,i,a.day,a.period);
       });
     }catch(e){
       console.error('[ttGeneticAlgorithm] خطأ في إعادة بناء الشبكة:', e);
@@ -12929,7 +13768,7 @@ function ttFullOptimize(data, dept, onProgress, onDone){
       if(onProgress) onProgress(62, '🧬 Genetic Algorithm...');
       ttGeneticAlgorithm(data, 3, 2, function(){
         safeStage('بعد GA', function(){ stepAdaptive(gcResult, cpResult); });
-      });
+      }, onProgress);
     });
   }
 
