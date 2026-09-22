@@ -392,15 +392,6 @@ textarea{resize:vertical;min-height:56px;}
 .dv{font-size:1.7rem;font-weight:900;font-family:'Tajawal',sans-serif;line-height:1;}
 .dl{font-size:.69rem;color:#777;margin-top:4px;}
 
-/* ── شبكة روابط سريعة — أيقونة + تسمية، بنفس فلسفة بطاقات الوصول السريع ── */
-.quick-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:10px;margin-bottom:18px;}
-.quick-tile{background:#fff;border:1px solid var(--cream);border-radius:14px;padding:14px 6px;text-align:center;
-  cursor:pointer;transition:all .15s ease;}
-.quick-tile:hover{border-color:var(--blue);box-shadow:0 6px 18px var(--sh);transform:translateY(-2px);}
-.quick-tile .qi{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;
-  font-size:1.15rem;margin:0 auto 7px;}
-.quick-tile .ql{font-size:.71rem;font-weight:700;color:#374151;}
-
 /* ── Progress bars ── */
 .prog-wrap{height:9px;background:var(--cream);border-radius:8px;overflow:hidden;flex:1;}
 .prog-bar{height:100%;border-radius:8px;transition:width .4s ease;}
@@ -937,6 +928,7 @@ textarea{resize:vertical;min-height:56px;}
           <button onclick="ttSmartExport(TT.resDept||null)" class="tt-tool-btn" title="تصدير ذكي لـ Claude" style="color:#16a34a">🚀</button>
           <button onclick="ttQualityReport(TT.resDept||null)" class="tt-tool-btn" title="تقرير الجودة الإحصائي" style="color:#2563eb">🏆</button>
           <button onclick="ttSmartFix()" class="tt-tool-btn" title="كشف التعارضات" style="color:#dc2626">🔧</button>
+          <button onclick="ttShowVersionsModal()" class="tt-tool-btn" title="إصدارات/نسخ محفوظة من الجدول" style="color:#f59e0b">🗃️</button>
           <button onclick="ttShowGenMenu()" class="tt-tool-btn" title="توليد جديد" style="color:#34d399;font-weight:700">⚡</button>
         </div>
       </div>
@@ -977,6 +969,30 @@ textarea{resize:vertical;min-height:56px;}
       <button onclick="document.getElementById('ttVerifyModal').style.display='none'" class="u-close-btn">✕</button>
     </div>
     <div id="ttVerifyContent" style="padding:14px 16px"></div>
+  </div>
+</div>
+<div id="ttVersionsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:40px;direction:rtl" onclick="if(event.target===this)document.getElementById('ttVersionsModal').style.display='none'">
+  <div style="background:#fff;border-radius:12px;width:min(520px,95vw);max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="background:#b45309;color:#fff;padding:12px 16px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1">
+      <span style="font-weight:700;font-size:10pt">🗃️ إصدارات الجدول</span>
+      <button onclick="document.getElementById('ttVersionsModal').style.display='none'" class="u-close-btn">✕</button>
+    </div>
+    <div style="padding:14px 16px">
+      <button onclick="ttSaveVersion()" style="width:100%;padding:9px;background:#b45309;color:#fff;border:none;border-radius:8px;font-family:Cairo,sans-serif;font-size:8.5pt;font-weight:700;cursor:pointer;margin-bottom:12px">💾 احفظ الجدول الحالي كنسخة جديدة</button>
+      <div id="ttVersionsContent"></div>
+    </div>
+  </div>
+</div>
+<div id="ttHeatmapModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:40px;direction:rtl" onclick="if(event.target===this)document.getElementById('ttHeatmapModal').style.display='none'">
+  <div style="background:#fff;border-radius:12px;width:min(680px,96vw);max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="background:#be123c;color:#fff;padding:12px 16px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1">
+      <span style="font-weight:700;font-size:10pt">🔥 خريطة الفجوات الحرارية</span>
+      <button onclick="document.getElementById('ttHeatmapModal').style.display='none'" class="u-close-btn">✕</button>
+    </div>
+    <div style="padding:14px 16px">
+      <div style="font-size:8pt;color:#666;margin-bottom:10px">عدد الفجوات (حصص فاضية بين أول وآخر حصة) لكل معلم في كل يوم، عبر كل الأقسام — كل ما اللون أغمق كل ما الفجوات أكتر.</div>
+      <div id="ttHeatmapContent" style="overflow-x:auto"></div>
+    </div>
   </div>
 </div>
 <div id="ttCoverModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:40px;direction:rtl" onclick="if(event.target===this)document.getElementById('ttCoverModal').style.display='none'">
@@ -1028,6 +1044,7 @@ textarea{resize:vertical;min-height:56px;}
         <select id="ttCellTeach" onchange="ttCheckCellConflict()" style="width:100%;padding:7px;border:1px solid #d1d5db;border-radius:6px;font-family:Cairo,sans-serif;font-size:9pt;direction:rtl"></select>
       </div>
       <div id="ttCellConflictWarn" style="display:none;margin-bottom:12px;padding:8px 10px;border-radius:7px;font-size:8pt;line-height:1.6"></div>
+      <div id="ttCellExplainPanel" style="display:none;margin-bottom:12px;padding:9px 10px;border-radius:7px;font-size:7.8pt;line-height:1.75;background:#f5f3ff;border:1px solid #ddd6fe;color:#4c1d95"></div>
       <div style="display:flex;gap:8px">
         <button onclick="ttSaveCell()" class="btn btn-green" style="flex:1;padding:8px">💾 حفظ</button>
         <button onclick="ttClearCell()" style="padding:8px 14px;border:1px solid #fca5a5;border-radius:8px;background:#fff1f2;color:#991b1b;font-family:Cairo,sans-serif;font-size:8.5pt;cursor:pointer">🗑 مسح</button>
@@ -1445,6 +1462,9 @@ const S = {
   timetableSubjectSettings: {},   // {subjName:{maxPerDay:2,allowDouble:true,isSplit:false,splitCount:2}}
   timetableConstraints: [],       // [{id,type:'subject_no_same_day'|'subject_must_same_day',subjectA,subjectB,scope:{depts:[]|'all'},level:1-5,active}]
   timetableClassSync: [],         // [{id,dept,classes:[idx,idx,...],subject:''(فارغ=أي مادة)}] — فصلين يسمح يتزامنوا بنفس المعلم بنفس الوقت
+  timetableSubjectTypes: {},      // {typeName:{label,maxPeriod:null|N,minPeriod:null|N,level:1-5}} — بند 10: نوع مادة + قاعدة وقت
+  timetableSubjectTypeAssign: {}, // {subjName:'typeName'} — تعيين كل مادة لنوعها
+  generatedTimetableVersions: {}, // {dept:[{id,name,data,savedAt,conflictCount}]} — بند: نسخ/إصدارات مسمّاة من الجدول، لمقارنة أكتر من محاولة توزيع
   timetableClassTeachers: {},    // {'dept|subj|clsIdx':'teacherName'}
   timetableSubjColors: {},       // {subjName:'#hexcolor'}
   generatedTimetable: null,
@@ -3003,17 +3023,6 @@ function buildDashboard(){
     <div class="dash-card"><div class="dash-icon" style="background:${totalUncovClasses>0?'#fdf3e0':'#e6f7ec'};color:${totalUncovClasses>0?'#856404':'var(--green)'}">🏫</div><div class="dv" style="color:${totalUncovClasses>0?'#856404':'var(--green)'}">${totalUncovClasses}</div><div class="dl">إجمالي الفصول الغير مغطاة</div></div>
   </div>`;
 
-  // روابط سريعة — نفس فلسفة "أفضل عروض وخدمات" في التطبيق المرجعي: أيقونة + تسمية لأكتر الوجهات استخدامًا
-  html+=`<div style="font-weight:800;font-size:.82rem;color:#374151;margin-bottom:8px">⚡ روابط سريعة</div>
-  <div class="quick-grid">
-    <div class="quick-tile" onclick="ttGoPage('quota')"><div class="qi" style="background:#fdeaea;color:var(--red2)">⚠️</div><div class="ql">كشف النصاب</div></div>
-    <div class="quick-tile" onclick="ttGoPage('deficit')"><div class="qi" style="background:#fdeaea;color:var(--red2)">🔴</div><div class="ql">كشف العجز</div></div>
-    <div class="quick-tile" onclick="ttGoPage('timetable')"><div class="qi" style="background:#e8f0fe;color:var(--blue)">🗓️</div><div class="ql">الجداول</div></div>
-    <div class="quick-tile" onclick="ttGoPage('teachers')"><div class="qi" style="background:#e8f0fe;color:var(--blue)">👩‍🏫</div><div class="ql">المعلمون</div></div>
-    <div class="quick-tile" onclick="ttGoPage('budget')"><div class="qi" style="background:#fdf3e0;color:var(--gold)">📊</div><div class="ql">بيان العجز والزيادة</div></div>
-    <div class="quick-tile" onclick="ttGoPage('staff')"><div class="qi" style="background:#f2e8fb;color:#6a1b9a">🏢</div><div class="ql">الأقسام الإدارية</div></div>
-  </div>`;
-
   // progress bars
   html+=`<div style="display:grid;gap:12px;margin-bottom:16px">
     <div>
@@ -3635,16 +3644,6 @@ function hardRefreshApp(){
 // ═══════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════
-// ── يفتح صفحة من روابط سريعة (بطاقات لوحة التحكم) مع تفعيل الزرار المطابق في القائمة الجانبية ──
-function ttGoPage(name){
-  var btn=null;
-  document.querySelectorAll('.nav-btn').forEach(function(b){
-    if(btn) return;
-    var oc=b.getAttribute('onclick')||'';
-    if(oc.indexOf("showPage('"+name+"'")===0) btn=b;
-  });
-  showPage(name,btn);
-}
 function showPage(name,btn){
   if(document.getElementById('subjectGrid')?.children.length>0)collectSubjects();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -7751,7 +7750,7 @@ function ttSRender(){
       +'<div style="background:#f8fafc;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">'
         +'<div><b style="font-size:9pt;color:#1a3a5c">'+subj+'</b>'
         +(weekly?' <span class="u-muted">'+weekly+' ح/أسبوع</span>':'')+'</div>'
-        +'<div class="u-muted">حد: '+ss.maxPerDay+'/يوم'+(ss.allowDouble?' | متتاليتان':'')+(ss.isSplit?' | Split('+( ss.splitCount||2)+')':'')+'</div>'
+        +'<div class="u-muted">حد: '+ss.maxPerDay+'/يوم'+(ss.allowDouble?' | متتاليتان':'')+(ss.isSplit?' | Split('+( ss.splitCount||2)+')':'')+((S.timetableSubjectTypeAssign&&S.timetableSubjectTypeAssign[subj])?' | 🏷️ '+S.timetableSubjectTypeAssign[subj]:'')+'</div>'
       +'</div>'
       +'<div style="padding:12px;display:flex;flex-direction:column;gap:10px">'
         // حد أقصى في اليوم
@@ -7850,6 +7849,7 @@ function ttShowDiagnosticsMenu(){
   dd.appendChild(mkBtn('🔍 فحص الجدوى',ttShowFeasibilityModal,'#0284c7'));
   dd.appendChild(mkBtn('🎯 نقاط الاختناق',ttShowBottleneckModal,'#7c2d12'));
   dd.appendChild(mkBtn('🧪 تحقق شامل (بعد التوليد)',ttShowVerifyModal,'#4c1d95'));
+  dd.appendChild(mkBtn('🔥 خريطة الفجوات الحرارية',ttShowHeatmapModal,'#be123c'));
   var cl=document.createElement('button');
   cl.textContent='✕ إغلاق';cl.style.cssText='display:block;width:100%;padding:5px;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;color:#6b7280;font-family:Cairo,sans-serif;font-size:8pt;cursor:pointer;margin-top:4px';
   cl.addEventListener('click',function(){dd.remove();});dd.appendChild(cl);
@@ -7875,6 +7875,9 @@ function ttShowConstraintsMenu(){
   dd.appendChild(mkBtn('📋 القيود الحالية',showCustomConstraints,'#059669'));
   dd.appendChild(mkBtn('🔗 مزامنة فصلين (حصة مدمجة)',addClassSyncConstraint,'#0369a1'));
   dd.appendChild(mkBtn('📋 مزامنات الفصول الحالية',showClassSyncList,'#0369a1'));
+  dd.appendChild(mkBtn('🏷️ نوع مادة جديد (خريطة أوقات)',addSubjectType,'#b45309'));
+  dd.appendChild(mkBtn('🏷️ تعيين مادة لنوع',assignSubjectType,'#b45309'));
+  dd.appendChild(mkBtn('📋 أنواع المواد الحالية',showSubjectTypes,'#b45309'));
   var cl=document.createElement('button');
   cl.textContent='✕ إغلاق';cl.style.cssText='display:block;width:100%;padding:5px;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;color:#6b7280;font-family:Cairo,sans-serif;font-size:8pt;cursor:pointer;margin-top:4px';
   cl.addEventListener('click',function(){dd.remove();});dd.appendChild(cl);
@@ -8317,13 +8320,30 @@ function ttLC(data,lid,d,p){
   // ══ 11. قيود مخصّصة من المستخدم — علاقات بين مادتين بمستويات أهمية قابلة للتنازل ══
   s += ttCheckCustomConstraints(data,lid,d,p);
 
+  // ══ 12. بند 10: نوع المادة وخريطة الأوقات — قيد وقت بمستوى أهمية، معرَّف مرة واحدة لكل "نوع"
+  //    بدل ما يتحدد لكل مادة لوحدها (زي "المواد الصعبة ممنوعة بعد الحصة 4") ══
+  s += ttCheckSubjectTypeTime(data,lid,d,p);
+
   return s;
 }
 
 // ═══════════════════════════════════════════
-// نظام القيود المخصّصة بمستويات أهمية (Weighted Constraints)
-// كل قيد له مستوى 1 (صارم جدًا) لـ5 (تفضيل بسيط يتنازل عنه أول حاجة)
+// بند 10: نوع المادة وخريطة الأوقات (Subject Type Time Map)
+// نوع واحد (زي "صعبة") بيتعرّف مرة واحدة بقاعدة وقت + مستوى أهمية، وكل المواد
+// المعيّنة للنوع ده بترث نفس القاعدة — بدل ما تتكرر الإعدادات لكل مادة لوحدها
 // ═══════════════════════════════════════════
+function ttCheckSubjectTypeTime(data,lid,d,p){
+  var typeName=S.timetableSubjectTypeAssign&&S.timetableSubjectTypeAssign[data.lessons[lid].subj];
+  if(!typeName) return 0;
+  var rule=S.timetableSubjectTypes&&S.timetableSubjectTypes[typeName];
+  if(!rule) return 0;
+  var pen=TT_LEVEL_PENALTY[rule.level]||1000;
+  var bad=false;
+  if(rule.maxPeriod!=null && p>rule.maxPeriod) bad=true; // ممنوعة بعد حصة معيّنة
+  if(rule.minPeriod!=null && p<rule.minPeriod) bad=true; // ممنوعة قبل حصة معيّنة
+  return bad?pen:0;
+}
+
 const TT_LEVEL_PENALTY={1:100000,2:20000,3:5000,4:1000,5:200};
 const TT_LEVEL_LABEL={1:'صارم جدًا',2:'مهم جدًا',3:'متوسط',4:'مرغوب',5:'تفضيل بسيط'};
 
@@ -8440,6 +8460,78 @@ function showClassSyncList(){
     list.splice(idx-1,1);
     saveState();
     toast('🗑 اتحذفت المزامنة');
+  }
+}
+
+// ── بند 10: نوع المادة وخريطة الأوقات — تعريف "نوع" بقاعدة وقت مرة واحدة (زي "صعبة" ممنوعة
+//    بعد حصة معيّنة)، وكل مادة تتعيّن لنوعها بدل ما تتكرر إعدادات الوقت لكل مادة لوحدها ──
+function addSubjectType(){
+  var name=prompt('اسم النوع (زي: صعبة، سهلة، اختيارية):');
+  if(!name) return;
+  name=name.trim();
+  if(!name) return;
+  var maxP=prompt('أقصى رقم حصة مسموح فيها مواد النوع ده (مثلاً 4 يعني ممنوعة بعد الحصة 4)؟\nسيبها فاضية لو مفيش حد أقصى:');
+  var minP=prompt('أقل رقم حصة مسموح فيها مواد النوع ده (مثلاً 3 يعني ممنوعة قبل الحصة 3)؟\nسيبها فاضية لو مفيش حد أدنى:');
+  var levelChoice=prompt('مستوى الأهمية (1 لـ5):\n1 = صارم جدًا (متتنازلش عنه إلا للضرورة القصوى)\n2 = مهم جدًا\n3 = متوسط (افتراضي)\n4 = مرغوب\n5 = تفضيل بسيط');
+  var level=parseInt(levelChoice)||3; if(level<1)level=1; if(level>5)level=5;
+  var maxPeriod = maxP&&maxP.trim() ? (parseInt(maxP)-1) : null; // تحويل لرقم حصة 0-indexed داخليًا
+  var minPeriod = minP&&minP.trim() ? (parseInt(minP)-1) : null;
+  if(!S.timetableSubjectTypes) S.timetableSubjectTypes={};
+  S.timetableSubjectTypes[name]={label:name,maxPeriod:(maxPeriod!=null&&!isNaN(maxPeriod))?maxPeriod:null,minPeriod:(minPeriod!=null&&!isNaN(minPeriod))?minPeriod:null,level:level};
+  saveState();
+  toast('✅ اتضاف نوع "'+name+'" — دلوقتي عيّن المواد المطلوبة ليه');
+}
+function assignSubjectType(){
+  var types=Object.keys(S.timetableSubjectTypes||{});
+  if(!types.length){toast('⚠ لسه مفيش أنواع مُعرَّفة — ضيف نوع الأول');return;}
+  var dept=prompt('في أنهي قسم؟ (اكتب الاسم بالظبط)\n\n'+(S.departments||[]).join('\n'));
+  if(!dept) return;
+  dept=dept.trim();
+  if((S.departments||[]).indexOf(dept)<0){toast('⚠ اسم القسم مش موجود بالظبط');return;}
+  var subjs=[...new Set((S.subjects[dept]||[]).map(function(s){return s.name;}).filter(Boolean))].sort();
+  if(!subjs.length){toast('⚠ القسم ده مفيهوش مواد معرَّفة');return;}
+  var subjPicked=prompt('اكتب اسم المادة بالظبط:\n\n'+subjs.join('\n'));
+  if(!subjPicked) return;
+  subjPicked=subjPicked.trim();
+  if(subjs.indexOf(subjPicked)<0){toast('⚠ اسم المادة مش موجود بالظبط في القسم ده');return;}
+  var typePicked=prompt('اختار النوع (اكتب الاسم بالظبط)، أو اكتب "بدون" للإلغاء:\n\n'+types.join('\n'));
+  if(!typePicked) return;
+  typePicked=typePicked.trim();
+  if(!S.timetableSubjectTypeAssign) S.timetableSubjectTypeAssign={};
+  if(typePicked==='بدون'){
+    delete S.timetableSubjectTypeAssign[subjPicked];
+    saveState();
+    toast('✅ "'+subjPicked+'" اتشالت من أي نوع');
+    return;
+  }
+  if(types.indexOf(typePicked)<0){toast('⚠ اسم النوع مش موجود بالظبط');return;}
+  S.timetableSubjectTypeAssign[subjPicked]=typePicked;
+  saveState();
+  toast('✅ "'+subjPicked+'" بقت نوع "'+typePicked+'"');
+}
+function showSubjectTypes(){
+  var types=S.timetableSubjectTypes||{};
+  var names=Object.keys(types);
+  if(!names.length){toast('⚠ لا توجد أنواع مواد مضافة');return;}
+  var assign=S.timetableSubjectTypeAssign||{};
+  var msg=names.map(function(n,i){
+    var t=types[n];
+    var rangeParts=[];
+    if(t.minPeriod!=null) rangeParts.push('من الحصة '+(t.minPeriod+1));
+    if(t.maxPeriod!=null) rangeParts.push('لحد الحصة '+(t.maxPeriod+1));
+    var range=rangeParts.length?rangeParts.join(' '):'بدون قيد وقت';
+    var subjCount=Object.keys(assign).filter(function(s){return assign[s]===n;}).length;
+    return (i+1)+'. "'+n+'" — '+range+' — مستوى '+t.level+' ('+(TT_LEVEL_LABEL[t.level]||'')+') — '+subjCount+' مادة معيَّنة';
+  }).join('\n');
+  var del=prompt(msg+'\n\nاكتب رقم النوع اللي عايز تحذفه (وهيتشال من كل المواد المعيَّنة ليه)، أو سيب فاضي للإلغاء:');
+  var idx=parseInt(del);
+  if(idx>=1 && idx<=names.length){
+    var removedName=names[idx-1];
+    delete types[removedName];
+    var assign2=S.timetableSubjectTypeAssign||{};
+    Object.keys(assign2).forEach(function(s){if(assign2[s]===removedName) delete assign2[s];});
+    saveState();
+    toast('🗑 اتحذف النوع "'+removedName+'"');
   }
 }
 
@@ -8631,8 +8723,188 @@ function ttOpenCell(el){
   if(slot&&slot.teacher) tsel.value=slot.teacher;
   document.getElementById('ttCellModal').style.display='flex';
   ttCheckCellConflict();
+  ttShowPlacementExplanation(slot);
+}
+// ── بند 7 من خطة التطوير: الجدول اللي بيشرح نفسه — ليه الحصة دي هنا بالظبط؟
+//    بيفحص أسباب حقيقية من البيانات (ندرة فرص المعلم، قواعد نوع المادة، قيود مخصّصة)
+//    بدل ما يكون تخمين عام ──
+function ttExplainPlacement(dept,cid,d,p,teacher,subj){
+  var reasons=[];
+  if(!teacher&&!subj) return reasons;
+  var cfg=ttCfg();
+  var scfg=(cfg.sections&&cfg.sections[dept])||{};
+  var days=scfg.days||[];
+  var pers=(scfg.periods||[]).filter(function(pp){return !pp.isBreak;});
+  var dpc=scfg.dayPeriodCounts||{};
+
+  // 1) ندرة فرص المعلم الفاضية عبر الأسبوع كله (كل الأقسام)
+  if(teacher){
+    var totalSlots=0,busySlots=0;
+    days.forEach(function(dn){
+      var dayMax=dpc[dn]!==undefined?dpc[dn]:pers.length;
+      for(var pi=0;pi<dayMax;pi++){
+        totalSlots++;
+        var busy=false;
+        Object.keys(S.generatedTimetable||{}).forEach(function(od){
+          if(busy)return;
+          var ocfg=(cfg.sections&&cfg.sections[od])||{};
+          var od_d=(ocfg.days||[]).indexOf(dn);
+          if(od_d<0)return;
+          var ores=S.generatedTimetable[od];var ott=ores&&ores.timetable&&ores.timetable[od];
+          if(!ott)return;
+          Object.keys(ott).forEach(function(cid2){
+            if(busy)return;
+            var slot2=ott[cid2]&&ott[cid2][od_d]&&ott[cid2][od_d][pi];
+            if(slot2&&(slot2.teacher===teacher||(slot2.teachers&&slot2.teachers.indexOf(teacher)>=0))) busy=true;
+          });
+        });
+        if(busy) busySlots++;
+      }
+    });
+    var busyPct=totalSlots?Math.round(busySlots/totalSlots*100):0;
+    if(busyPct>=60){
+      reasons.push('👤 المعلم "'+teacher+'" مشغول في '+busySlots+' من '+totalSlots+' حصة أسبوعية ('+busyPct+'%) — مساحة اختياره كانت ضيقة، والخانة دي من فرصه القليلة الفاضية.');
+    }
+    var ts=S.timetableTeacherSettings&&S.timetableTeacherSettings[teacher];
+    if(ts&&ts.maxPerDay){
+      reasons.push('⏱ المعلم عنده حد أقصى '+ts.maxPerDay+' حصص/يوم — لِلحفاظ عليه، حصصه اتوزّعت على أيام مختلفة بدل ما تتكدّس في يوم واحد.');
+    }
+    if(ts&&ts.maxGaps!=null){
+      reasons.push('📏 المعلم عنده حد أقصى '+ts.maxGaps+' فجوة بين أول وآخر حصة له في اليوم — ده أثّر على اختيار الحصة دي بالذات.');
+    }
+  }
+
+  // 2) قاعدة نوع المادة (بند 10)
+  if(subj){
+    var typeName=S.timetableSubjectTypeAssign&&S.timetableSubjectTypeAssign[subj];
+    if(typeName){
+      var rule=S.timetableSubjectTypes&&S.timetableSubjectTypes[typeName];
+      if(rule){
+        if(rule.maxPeriod!=null) reasons.push('🏷️ مادة "'+subj+'" نوعها "'+typeName+'" — لازم تكون في الحصة '+(rule.maxPeriod+1)+' أو قبلها.');
+        if(rule.minPeriod!=null) reasons.push('🏷️ مادة "'+subj+'" نوعها "'+typeName+'" — لازم تكون من الحصة '+(rule.minPeriod+1)+' أو بعدها.');
+      }
+    }
+    var ss=ttSset(subj);
+    if(ss&&ss.maxPerDay) reasons.push('📚 المادة محدّد لها حد أقصى '+ss.maxPerDay+' حصة/يوم — عشان كده اتوزّعت على أيام مختلفة بدل التكرار في يوم واحد.');
+  }
+
+  // 3) قيود مخصّصة بين مادتين (بند 8) ممكن تكون أثّرت في اختيار اليوم
+  (S.timetableConstraints||[]).forEach(function(c){
+    if(c.active===false||!subj) return;
+    if(c.scope&&c.scope.depts&&c.scope.depts!=='all'&&c.scope.depts.indexOf(dept)<0) return;
+    if(!subjMatch(subj,c.subjectA)&&!subjMatch(subj,c.subjectB)) return;
+    var other=subjMatch(subj,c.subjectA)?c.subjectB:c.subjectA;
+    if(c.type==='subject_no_same_day') reasons.push('🔗 في قيد إن "'+subj+'" و"'+other+'" ممنوع يبقوا نفس اليوم — القيد ده أثّر على اختيار يوم الحصة دي.');
+    if(c.type==='subject_must_same_day') reasons.push('🔗 في قيد إن "'+subj+'" لازم تبقى بنفس يوم "'+other+'" — القيد ده أثّر على اختيار اليوم.');
+  });
+
+  if(!reasons.length){
+    reasons.push('✅ الخانة دي كانت من المواضع القليلة اللي المعلم فاضي فيها فعليًا، من غير أي تعارض مع فصل أو مادة تانية في نفس اليوم.');
+  }
+  return reasons;
+}
+function ttShowPlacementExplanation(slot){
+  var panel=document.getElementById('ttCellExplainPanel');
+  if(!panel) return;
+  if(!slot||(!slot.teacher&&!slot.subj)){ panel.style.display='none'; return; }
+  var c=TT.cell;
+  var reasons=ttExplainPlacement(c.dept,c.cid,c.d,c.p,slot.teacher,slot.subj);
+  panel.innerHTML='<div style="font-weight:700;margin-bottom:5px">❓ ليه الحصة دي هنا؟</div>'
+    +reasons.map(function(r){return '<div style="margin-bottom:3px">'+r+'</div>';}).join('');
+  panel.style.display='block';
 }
 function ttCloseCell(){document.getElementById('ttCellModal').style.display='none';}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  بند 15 من خطة التطوير: خريطة الفجوات الحرارية (Heatmap)      ║
+// ║  معلمين × أيام، عدد الفجوات لكل خانة، عبر كل الأقسام مرة واحدة ║
+// ╚══════════════════════════════════════════════════════════════╝
+function ttComputeGapHeatmap(){
+  var cfg=ttCfg();
+  var weekOrder=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  var allDays=[];
+  Object.keys(S.generatedTimetable||{}).forEach(function(dept){
+    var scfg=(cfg.sections&&cfg.sections[dept])||{};
+    (scfg.days||[]).forEach(function(d){if(allDays.indexOf(d)<0)allDays.push(d);});
+  });
+  allDays.sort(function(a,b){return weekOrder.indexOf(a)-weekOrder.indexOf(b);});
+
+  var teacherDayPeriods={}; // teacher -> dayName -> [period,...]
+  Object.keys(S.generatedTimetable||{}).forEach(function(dept){
+    var res=S.generatedTimetable[dept];var tt=res&&res.timetable&&res.timetable[dept];
+    if(!tt) return;
+    var scfg=(cfg.sections&&cfg.sections[dept])||{};
+    var days=scfg.days||[];
+    Object.keys(tt).forEach(function(cid){
+      for(var d=0;d<days.length;d++){
+        var byDay=tt[cid][d];if(!byDay)continue;
+        var dayName=days[d];
+        Object.keys(byDay).forEach(function(pKey){
+          var slot=byDay[pKey];if(!slot)return;
+          var tlist=slot.teachers&&slot.teachers.length?slot.teachers:[slot.teacher];
+          tlist.forEach(function(tn){
+            if(!tn)return;
+            if(!teacherDayPeriods[tn]) teacherDayPeriods[tn]={};
+            if(!teacherDayPeriods[tn][dayName]) teacherDayPeriods[tn][dayName]=[];
+            teacherDayPeriods[tn][dayName].push(+pKey);
+          });
+        });
+      }
+    });
+  });
+
+  var teachers=Object.keys(teacherDayPeriods);
+  var matrix=teachers.map(function(tn){
+    var row={teacher:tn,gaps:{},totalGaps:0};
+    allDays.forEach(function(dn){
+      var ps=teacherDayPeriods[tn][dn];
+      var g=0;
+      if(ps&&ps.length>=2){
+        var sorted=ps.slice().sort(function(a,b){return a-b;});
+        var span=sorted[sorted.length-1]-sorted[0]+1;
+        g=span-sorted.length;
+      }
+      row.gaps[dn]=g;
+      row.totalGaps+=g;
+    });
+    return row;
+  });
+  matrix.sort(function(a,b){return b.totalGaps-a.totalGaps;});
+  return {days:allDays,matrix:matrix};
+}
+function ttColorForGaps(g){
+  if(g<=0) return {bg:'#dcfce7',fg:'#166534'};
+  if(g===1) return {bg:'#fef9c3',fg:'#854d0e'};
+  if(g===2) return {bg:'#fed7aa',fg:'#9a3412'};
+  if(g===3) return {bg:'#fca5a5',fg:'#7f1d1d'};
+  return {bg:'#ef4444',fg:'#fff'};
+}
+function ttShowHeatmapModal(){
+  var content=document.getElementById('ttHeatmapContent');
+  if(!content) return;
+  var r=ttComputeGapHeatmap();
+  if(!r.matrix.length){
+    content.innerHTML='<p style="color:#aaa;text-align:center;padding:20px">لا توجد جداول متولّدة بعد</p>';
+    document.getElementById('ttHeatmapModal').style.display='flex';
+    return;
+  }
+  var html='<table style="border-collapse:collapse;width:100%;font-size:7.5pt">'
+    +'<thead><tr><th style="padding:6px 8px;text-align:right;position:sticky;right:0;background:#fff;border-bottom:2px solid #e2e8f0">المعلم</th>'
+    +r.days.map(function(d){return '<th style="padding:6px 4px;text-align:center;border-bottom:2px solid #e2e8f0;min-width:52px">'+d+'</th>';}).join('')
+    +'<th style="padding:6px 8px;text-align:center;border-bottom:2px solid #e2e8f0;font-weight:700">الإجمالي</th></tr></thead><tbody>';
+  r.matrix.forEach(function(row){
+    html+='<tr><td style="padding:5px 8px;font-weight:700;color:#1a3a5c;white-space:nowrap;position:sticky;right:0;background:#fff;border-bottom:1px solid #f1f5f9">'+row.teacher+'</td>';
+    r.days.forEach(function(d){
+      var g=row.gaps[d]||0;
+      var c=ttColorForGaps(g);
+      html+='<td style="padding:5px 4px;text-align:center;background:'+c.bg+';color:'+c.fg+';font-weight:700;border-bottom:1px solid #f1f5f9">'+g+'</td>';
+    });
+    html+='<td style="padding:5px 8px;text-align:center;font-weight:800;color:'+(row.totalGaps>=6?'#be123c':'#374151')+';border-bottom:1px solid #f1f5f9">'+row.totalGaps+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  content.innerHTML=html;
+  document.getElementById('ttHeatmapModal').style.display='flex';
+}
 
 // ── بند 2 من خطة التطوير: تحذير لوني وقت التعديل اليدوي — يفحص تعارض المعلم (مدرّس في فصل تاني بنفس الموعد) وقفل المعلم ──
 function ttGetCellConflicts(teacher,c){
@@ -9858,6 +10130,87 @@ function ttUpdateUndoUI(){
   var u=document.getElementById('ttUndoBtn'),r=document.getElementById('ttRedoBtn');
   if(u){u.disabled=!_ttUndo.length;u.style.opacity=_ttUndo.length?1:0.4;}
   if(r){r.disabled=!_ttRedo.length;r.style.opacity=_ttRedo.length?1:0.4;}
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  إصدارات/نسخ الجدول — احفظ أكتر من محاولة توزيع مسمّاة لنفس   ║
+// ║  القسم وقارن بينهم قبل ما تعتمد واحدة، بدل التصدير اليدوي     ║
+// ╚══════════════════════════════════════════════════════════════╝
+function ttSaveVersion(){
+  var dept=TT.resDept;
+  if(!dept||!S.generatedTimetable||!S.generatedTimetable[dept]){toast('⚠ لا يوجد جدول متولّد لهذا القسم');return;}
+  var name=prompt('اسم النسخة (مثلاً: خطة أ، محاولة بعد رفع أولوية المعلمين):');
+  if(!name) return;
+  name=name.trim();
+  if(!name) return;
+  if(!S.generatedTimetableVersions) S.generatedTimetableVersions={};
+  if(!S.generatedTimetableVersions[dept]) S.generatedTimetableVersions[dept]=[];
+  var conflictCount=(S.generatedTimetable[dept].conflicts||[]).length;
+  S.generatedTimetableVersions[dept].push({
+    id:'v_'+Date.now().toString(36),
+    name:name,
+    data:JSON.parse(JSON.stringify(S.generatedTimetable[dept])),
+    savedAt:new Date().toISOString(),
+    conflictCount:conflictCount
+  });
+  saveState();
+  toast('✅ اتحفظت نسخة "'+name+'"');
+  ttShowVersionsModal();
+}
+function ttShowVersionsModal(){
+  var dept=TT.resDept;
+  var content=document.getElementById('ttVersionsContent');
+  if(!content) return;
+  var versions=(dept&&S.generatedTimetableVersions&&S.generatedTimetableVersions[dept])||[];
+  if(!dept){
+    content.innerHTML='<p style="color:#aaa;text-align:center;padding:16px;font-size:8.5pt">اختر قسم من تبويب النتائج الأول</p>';
+  } else if(!versions.length){
+    content.innerHTML='<p style="color:#aaa;text-align:center;padding:16px;font-size:8.5pt">لا توجد نسخ محفوظة لقسم "'+dept+'" — احفظ نسخة بعد أي توليد تحب ترجعله لاحقًا</p>';
+  } else {
+    var html='<div style="display:flex;flex-direction:column;gap:8px">';
+    versions.slice().reverse().forEach(function(v){
+      var dt=new Date(v.savedAt);
+      var dtStr=dt.toLocaleDateString('ar')+' '+dt.toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'});
+      html+='<div style="border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;background:#f9fafb">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">'
+        +'<div><span style="font-weight:700;font-size:9pt;color:#1a3a5c">'+v.name+'</span>'
+        +'<div style="font-size:7.5pt;color:#6b7280;margin-top:2px">'+dtStr+(v.conflictCount!=null?' — '+v.conflictCount+' تعارض/حصة غير مسكَّنة':'')+'</div></div>'
+        +'<div style="display:flex;gap:5px;flex-shrink:0">'
+        +'<button onclick="ttLoadVersion(\''+v.id+'\')" style="padding:5px 12px;border:none;border-radius:6px;background:#1a3a5c;color:#fff;font-size:7.5pt;cursor:pointer">📂 تحميل</button>'
+        +'<button onclick="ttDeleteVersion(\''+v.id+'\')" style="padding:5px 10px;border:none;border-radius:6px;background:#fee2e2;color:#991b1b;font-size:7.5pt;cursor:pointer">🗑</button>'
+        +'</div></div></div>';
+    });
+    html+='</div>';
+    content.innerHTML=html;
+  }
+  document.getElementById('ttVersionsModal').style.display='flex';
+}
+function ttLoadVersion(id){
+  var dept=TT.resDept;
+  if(!dept) return;
+  var versions=(S.generatedTimetableVersions&&S.generatedTimetableVersions[dept])||[];
+  var v=versions.find(function(x){return x.id===id;});
+  if(!v) return;
+  if(!confirm('هتستبدل الجدول الحالي لقسم "'+dept+'" بنسخة "'+v.name+'".\nالجدول الحالي هيتحفظ في التراجع (↩) فتقدر ترجعله لو غيّرت رأيك. تكمل؟')) return;
+  ttSaveUndo(); // حماية إضافية عبر نظام التراجع العادي
+  S.generatedTimetable[dept]=JSON.parse(JSON.stringify(v.data));
+  saveState();
+  document.getElementById('ttVersionsModal').style.display='none';
+  ttRenderRes();
+  toast('✅ اتحمّلت نسخة "'+v.name+'"');
+}
+function ttDeleteVersion(id){
+  var dept=TT.resDept;
+  if(!dept) return;
+  var versions=(S.generatedTimetableVersions&&S.generatedTimetableVersions[dept])||[];
+  var idx=versions.findIndex(function(x){return x.id===id;});
+  if(idx<0) return;
+  var name=versions[idx].name;
+  if(!confirm('تحذف نسخة "'+name+'"؟ الإجراء ده نهائي.')) return;
+  versions.splice(idx,1);
+  saveState();
+  ttShowVersionsModal();
+  toast('🗑 اتحذفت نسخة "'+name+'"');
 }
 
 // ══ حالة السحب ══
@@ -12036,13 +12389,112 @@ function ttLGCell(el,dept,subj,ci){
   },200);
 }
 
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  بند 17 من خطة التطوير: إعادة توليد جزئية سريعة                ║
+// ║  لو عدّلت تعيين معلم واحد بعد ما القسم اتولّد بالكامل، بدل ما   ║
+// ║  تعيد توليد القسم كله من الأول، بنجرّب إصلاح سريع: نشيل بس      ║
+// ║  حصص المعلم/المادة/الفصل المتأثرة ونعيد تسكينها في أول خانة    ║
+// ║  فاضية فعليًا (بدون تصادم)، من غير ما نلمس باقي الجدول خالص.   ║
+// ║  لو مقدرناش نسكّن كل الحصص، بترجع عدد المتبقي عشان تعرف لو      ║
+// ║  محتاج توليد كامل بدل كده.                                     ║
+// ╚══════════════════════════════════════════════════════════════╝
+function ttIncrementalReassign(dept,subj,cls,oldTeacher,newTeacher){
+  var res=S.generatedTimetable&&S.generatedTimetable[dept];
+  if(!res||!res.timetable||!res.timetable[dept]) return null; // مفيش جدول متولّد أصلاً — محتاج توليد عادي
+  var cid='cls_'+cls;
+  var classTT=res.timetable[dept][cid];
+  if(!classTT) return null;
+
+  var cfg=ttCfg();
+  var scfg=(cfg.sections&&cfg.sections[dept])||{};
+  var days=scfg.days||[];
+  var pers=(scfg.periods||[]).filter(function(pp){return !pp.isBreak;});
+  var dpc=scfg.dayPeriodCounts||{};
+
+  // 1) اجمع خانات المادة دي في الفصل ده اللي كانت للمعلم القديم (أو أي معلم لو مفيش قديم محدد)
+  var affected=[];
+  for(var d=0;d<days.length;d++){
+    var byDay=classTT[d];if(!byDay) continue;
+    Object.keys(byDay).forEach(function(pKey){
+      var slot=byDay[pKey];
+      if(slot&&subjMatch(slot.subj,subj)&&(!oldTeacher||slot.teacher===oldTeacher||(slot.teachers&&slot.teachers.indexOf(oldTeacher)>=0))){
+        affected.push({d:d,p:+pKey,subj:slot.subj});
+      }
+    });
+  }
+  if(!affected.length) return null; // مفيش حصص حالية لهذه المادة/الفصل — محتاج توليد عادي بدل إصلاح جزئي
+
+  // 2) امسح الخانات القديمة أولاً
+  affected.forEach(function(a){ delete classTT[a.d][a.p]; });
+
+  // فحص: هل المعلم الجديد مشغول في يوم/حصة معيّنة في أي قسم تاني (باستثناء الفصل اللي بنسكّن فيه)؟
+  function isTeacherBusy(dayName,p){
+    var busy=false;
+    Object.keys(S.generatedTimetable||{}).forEach(function(od){
+      if(busy)return;
+      var ocfg=(cfg.sections&&cfg.sections[od])||{};
+      var od_d=(ocfg.days||[]).indexOf(dayName);
+      if(od_d<0)return;
+      var ores=S.generatedTimetable[od];var ott=ores&&ores.timetable&&ores.timetable[od];
+      if(!ott)return;
+      Object.keys(ott).forEach(function(cid2){
+        if(busy)return;
+        if(od===dept&&cid2===cid)return; // استبعاد نفس الفصل اللي بنسكّن فيه (فحصناه بالفعل عبر classTT)
+        var slot2=ott[cid2]&&ott[cid2][od_d]&&ott[cid2][od_d][p];
+        if(slot2&&(slot2.teacher===newTeacher||(slot2.teachers&&slot2.teachers.indexOf(newTeacher)>=0))) busy=true;
+      });
+    });
+    return busy;
+  }
+
+  var ts=S.timetableTeacherSettings&&S.timetableTeacherSettings[newTeacher];
+  var unplaced=[];
+  affected.forEach(function(a){
+    var placed=false;
+    // جرّب الخانة الأصلية الأول (أقرب لتوزيع الجدول الأصلي)، وبعدين كل خانات الأسبوع
+    var tryOrder=[{d:a.d,p:a.p}];
+    days.forEach(function(dn,di){
+      var dayMax=dpc[dn]!==undefined?dpc[dn]:pers.length;
+      for(var pi=0;pi<dayMax;pi++) tryOrder.push({d:di,p:pi});
+    });
+    for(var i=0;i<tryOrder.length&&!placed;i++){
+      var d2=tryOrder[i].d,p2=tryOrder[i].p;
+      if(classTT[d2]&&classTT[d2][p2]) continue; // الخانة دي مشغولة بحصة تانية للفصل
+      var dayName=days[d2];
+      if(ts&&ts.blocked&&ts.blocked.indexOf(dayName+'_'+p2)>=0) continue; // المعلم مقفول في الوقت ده
+      if(isTeacherBusy(dayName,p2)) continue; // المعلم مشغول في فصل تاني
+      if(!classTT[d2]) classTT[d2]={};
+      classTT[d2][p2]={subj:a.subj,teacher:newTeacher,teachers:[newTeacher],isSplit:false,_manual:true};
+      placed=true;
+    }
+    if(!placed) unplaced.push(a);
+  });
+
+  saveState();
+  return {ok:true,placedCount:affected.length-unplaced.length,unplacedCount:unplaced.length};
+}
+
 function ttLGAssign(dept,subj,ci,teacher){
   if(!S.timetableClassTeachers)S.timetableClassTeachers={};
   var k=dept+'|'+subj+'|'+ci;
+  var oldTeacher=S.timetableClassTeachers[k]||'';
   if(teacher)S.timetableClassTeachers[k]=teacher;
   else delete S.timetableClassTeachers[k];
   saveState();
   if(teacher&&teacher!=='__SKIP__')toast('✅ '+ttClsName(dept,ci)+' — '+subj+' ← '+teacher.split(' ').slice(-1)[0]);
+
+  // بند 17: إعادة توليد جزئية سريعة — لو القسم ده متولّد بالفعل، نجرّب إصلاح سريع بدل توليد كامل من الأول
+  if(teacher&&teacher!=='__SKIP__'&&oldTeacher&&oldTeacher!=='__SKIP__'&&oldTeacher!==teacher&&S.generatedTimetable&&S.generatedTimetable[dept]){
+    var r=ttIncrementalReassign(dept,subj,ci,oldTeacher,teacher);
+    if(r&&r.ok){
+      if(typeof ttRenderRes==='function') ttRenderRes();
+      if(r.unplacedCount>0){
+        toast('⚡ إصلاح سريع: '+r.placedCount+' حصة اتحطت، '+r.unplacedCount+' محتاجة تسكين يدوي أو توليد كامل');
+      } else {
+        toast('⚡ إصلاح سريع تم لـ'+r.placedCount+' حصة — من غير إعادة توليد كامل للقسم');
+      }
+    }
+  }
 }
 
 function ttLGSkip(dept,subj,ci){
