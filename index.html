@@ -9714,7 +9714,8 @@ function ttUpdateUndoUI(){
 // ══ حالة السحب ══
 var _drag={
   on:false, dept:'', cid:'', ci:0, d:0, p:0, slot:null,
-  srcEl:null, ghost:null, lastTarget:null, startX:0, startY:0
+  srcEl:null, ghost:null, lastTarget:null, startX:0, startY:0,
+  armed:false, holdTimer:null, pointerType:''
 };
 
 function ttMakeDraggable(el){
@@ -9726,15 +9727,20 @@ function ttMakeDraggable(el){
   el.addEventListener('pointerdown', ttPtrDown, {passive:false});
 }
 
+// ── إصلاح: اللمس العرضي وقت تمرير الجدول (Scroll) كان بيتفسّر كسحب وينقل الحصة بالغلط،
+//    لإن preventDefault كان بيتنفذ فورًا عند أي لمسة لخلية، فيمنع التمرير الطبيعي من أول لحظة.
+//    الحل: على اللمس (touch) بس، لازم إمساك مستمر (long-press ~350ms) بدون حركة كبيرة قبل ما
+//    السحب "يتفعّل" فعليًا — أي محاولة تمرير عادية (حركة سريعة) بتُلغي السحب وتسيب المتصفح
+//    يمرّر طبيعي. على الماوس/القلم السلوك يفضل فوري زي ما كان (مفيش تعارض تمرير أصلاً). ──
 function ttPtrDown(e){
   // تجاهل النقر المزدوج (سيفتح مودال التعديل)
   var el=e.currentTarget;
   var slot=_ttGetSlot(el);
   if(!slot) return; // خلية فارغة — لا سحب
-  e.preventDefault();
-  el.setPointerCapture(e.pointerId);
 
   _drag.on=false;
+  _drag.armed=false;
+  _drag.pointerType=e.pointerType||'mouse';
   _drag.dept=TT.resDept;
   _drag.ci=+el.dataset.ci;
   _drag.cid=el.dataset.cid||('cls_'+el.dataset.ci);
@@ -9746,19 +9752,48 @@ function ttPtrDown(e){
   _drag.startY=e.clientY;
   _drag.lastTarget=null;
 
-  // استمع لحركة الإصبع/القلم
-  el.addEventListener('pointermove', ttPtrMove, {passive:false});
-  el.addEventListener('pointerup',   ttPtrUp,   {passive:false});
-  el.addEventListener('pointercancel',ttPtrCancel);
+  if(_drag.pointerType==='touch'){
+    // ── لمس: منستنّاش نمنع السلوك الافتراضي فورًا (عشان التمرير الطبيعي يفضل شغال) ──
+    // لو المستخدم فعلاً بيحاول يمرّر، هيتحرك بسرعة قبل ما التايمر يخلّص، وهيلغي السحب تلقائيًا
+    el.addEventListener('pointermove', ttPtrMove, {passive:false});
+    el.addEventListener('pointerup',   ttPtrUp,   {passive:false});
+    el.addEventListener('pointercancel',ttPtrCancel);
+    _drag.holdTimer=setTimeout(function(){
+      if(!_drag.srcEl||_drag.srcEl!==el) return; // اتلغى قبل كده
+      _drag.armed=true;
+      // تلميح بصري خفيف إن السحب بقى جاهز
+      el.style.transition='transform .12s';
+      el.style.transform='scale(1.06)';
+      el.style.boxShadow='0 4px 14px rgba(0,0,0,.25)';
+      if(navigator.vibrate) navigator.vibrate(15);
+    },350);
+  } else {
+    // ماوس/قلم: سلوك فوري زي ما كان — مفيش تعارض تمرير حقيقي هنا
+    e.preventDefault();
+    el.setPointerCapture(e.pointerId);
+    _drag.armed=true;
+    el.addEventListener('pointermove', ttPtrMove, {passive:false});
+    el.addEventListener('pointerup',   ttPtrUp,   {passive:false});
+    el.addEventListener('pointercancel',ttPtrCancel);
+  }
 }
 
 function ttPtrMove(e){
-  e.preventDefault();
   var dx=e.clientX-_drag.startX, dy=e.clientY-_drag.startY;
 
-  // بدء السحب بعد 6px
+  if(_drag.pointerType==='touch'&&!_drag.armed){
+    // لسه في فترة الانتظار: لو تحرك حركة واضحة قبل ما يتسلّح، ده تمرير عادي — نلغي السحب تمامًا
+    if(Math.abs(dx)>10||Math.abs(dy)>10){
+      _ttCancelArm(e.currentTarget);
+    }
+    return; // من غير preventDefault — سيب المتصفح يمرّر طبيعي
+  }
+
+  e.preventDefault();
+  // بدء السحب بعد 6px (بعد التسلّح)
   if(!_drag.on&&(Math.abs(dx)>6||Math.abs(dy)>6)){
     _drag.on=true;
+    if(_drag.srcEl){_drag.srcEl.style.transform='';_drag.srcEl.style.boxShadow='';}
     _ttCreateGhost(e);
     _ttHighlightTargets(true);
   }
@@ -9767,14 +9802,27 @@ function ttPtrMove(e){
   _ttFindTarget(e);
 }
 
+// إلغاء السحب قبل ما يتسلّح (وقت لمسة كانت في الأصل تمرير عادي)
+function _ttCancelArm(el){
+  if(_drag.holdTimer){clearTimeout(_drag.holdTimer);_drag.holdTimer=null;}
+  if(el){
+    el.removeEventListener('pointermove',ttPtrMove);
+    el.removeEventListener('pointerup',ttPtrUp);
+    el.removeEventListener('pointercancel',ttPtrCancel);
+    el.style.transform='';el.style.boxShadow='';
+  }
+  _drag={on:false,dept:'',cid:'',ci:0,d:0,p:0,slot:null,srcEl:null,ghost:null,lastTarget:null,startX:0,startY:0,armed:false,holdTimer:null,pointerType:''};
+}
+
 function ttPtrUp(e){
   var el=_drag.srcEl;
+  if(_drag.holdTimer){clearTimeout(_drag.holdTimer);_drag.holdTimer=null;}
   if(el){
     el.removeEventListener('pointermove',ttPtrMove);
     el.removeEventListener('pointerup',ttPtrUp);
     el.removeEventListener('pointercancel',ttPtrCancel);
   }
-  if(!_drag.on){_ttCleanDrag();return;}
+  if(!_drag.armed||!_drag.on){_ttCleanDrag();return;}
   // تطبيق السحب
   var tgt=_drag.lastTarget;
   if(tgt&&tgt!==_drag.srcEl){
@@ -9784,7 +9832,10 @@ function ttPtrUp(e){
   _ttCleanDrag();
 }
 
-function ttPtrCancel(){_ttCleanDrag();}
+function ttPtrCancel(){
+  if(_drag.holdTimer){clearTimeout(_drag.holdTimer);_drag.holdTimer=null;}
+  _ttCleanDrag();
+}
 
 function _ttGetSlot(el){
   var dept=TT.resDept;
@@ -9882,10 +9933,11 @@ function _ttDoSwap(tgtEl){
 }
 
 function _ttCleanDrag(){
-  if(_drag.srcEl)_drag.srcEl.style.opacity='';
+  if(_drag.srcEl){_drag.srcEl.style.opacity='';_drag.srcEl.style.transform='';_drag.srcEl.style.boxShadow='';}
   if(_drag.ghost&&_drag.ghost.parentNode)_drag.ghost.parentNode.removeChild(_drag.ghost);
+  if(_drag.holdTimer){clearTimeout(_drag.holdTimer);}
   _ttHighlightTargets(false);
-  _drag={on:false,dept:'',cid:'',ci:0,d:0,p:0,slot:null,srcEl:null,ghost:null,lastTarget:null,startX:0,startY:0};
+  _drag={on:false,dept:'',cid:'',ci:0,d:0,p:0,slot:null,srcEl:null,ghost:null,lastTarget:null,startX:0,startY:0,armed:false,holdTimer:null,pointerType:''};
   ttRenderRes();
 }
 
