@@ -384,9 +384,22 @@ textarea{resize:vertical;min-height:56px;}
 
 /* ── Dashboard cards ── */
 .dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px;margin-bottom:16px;}
-.dash-card{background:#fff;border-radius:14px;padding:16px 12px;border:1px solid var(--cream);text-align:center;box-shadow:0 2px 10px var(--sh);}
+.dash-card{background:#fff;border-radius:16px;padding:18px 12px 14px;border:1px solid var(--cream);text-align:center;
+  box-shadow:0 2px 12px var(--sh);transition:transform .15s ease,box-shadow .15s ease;}
+.dash-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px var(--sh);}
+.dash-icon{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;margin:0 auto 10px;}
 .dv{font-size:1.7rem;font-weight:900;font-family:'Tajawal',sans-serif;line-height:1;}
 .dl{font-size:.69rem;color:#777;margin-top:4px;}
+
+/* ── شبكة روابط سريعة — أيقونة + تسمية، بنفس فلسفة بطاقات الوصول السريع ── */
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:10px;margin-bottom:18px;}
+.quick-tile{background:#fff;border:1px solid var(--cream);border-radius:14px;padding:14px 6px;text-align:center;
+  cursor:pointer;transition:all .15s ease;}
+.quick-tile:hover{border-color:var(--blue);box-shadow:0 6px 18px var(--sh);transform:translateY(-2px);}
+.quick-tile .qi{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:1.15rem;margin:0 auto 7px;}
+.quick-tile .ql{font-size:.71rem;font-weight:700;color:#374151;}
 
 /* ── Progress bars ── */
 .prog-wrap{height:9px;background:var(--cream);border-radius:8px;overflow:hidden;flex:1;}
@@ -1431,6 +1444,7 @@ const S = {
   timetableTeacherSettings: {}, // {teacherName:{maxPerDay:5,blocked:['الأحد_2',...]}}
   timetableSubjectSettings: {},   // {subjName:{maxPerDay:2,allowDouble:true,isSplit:false,splitCount:2}}
   timetableConstraints: [],       // [{id,type:'subject_no_same_day'|'subject_must_same_day',subjectA,subjectB,scope:{depts:[]|'all'},level:1-5,active}]
+  timetableClassSync: [],         // [{id,dept,classes:[idx,idx,...],subject:''(فارغ=أي مادة)}] — فصلين يسمح يتزامنوا بنفس المعلم بنفس الوقت
   timetableClassTeachers: {},    // {'dept|subj|clsIdx':'teacherName'}
   timetableSubjColors: {},       // {subjName:'#hexcolor'}
   generatedTimetable: null,
@@ -2979,14 +2993,25 @@ function buildDashboard(){
     <div style="font-size:.78rem;color:#6b5300;line-height:1.9;">${anomalies.map(a=>`• ${a}`).join('<br>')}</div>
   </div>`:'';
   html+=`<div class="dash-grid">
-    <div class="dash-card"><div class="dv" style="color:var(--blue)">${total}</div><div class="dl">إجمالي المعلمين</div></div>
-    <div class="dash-card"><div class="dv" style="color:var(--green)">${complete}</div><div class="dl">مكتمل النصاب</div></div>
-    <div class="dash-card"><div class="dv" style="color:var(--red2)">${deficit}</div><div class="dl">ناقص النصاب</div></div>
-    <div class="dash-card"><div class="dv" style="color:var(--blue2)">${excess}</div><div class="dl">زائد النصاب</div></div>
-    <div class="dash-card"><div class="dv" style="color:var(--gold)">${deputies}</div><div class="dl">وكلاء</div></div>
-    <div class="dash-card"><div class="dv" style="color:#6a1b9a">${specialists}</div><div class="dl">بدون نصاب</div></div>
-    <div class="dash-card"><div class="dv" style="color:${subjsWithUncov>0?'#856404':'var(--green)'}">${subjsWithUncov}</div><div class="dl">مواد بفصول غير مغطاة</div></div>
-    <div class="dash-card"><div class="dv" style="color:${totalUncovClasses>0?'#856404':'var(--green)'}">${totalUncovClasses}</div><div class="dl">إجمالي الفصول الغير مغطاة</div></div>
+    <div class="dash-card"><div class="dash-icon" style="background:#e8f0fe;color:var(--blue)">👥</div><div class="dv" style="color:var(--blue)">${total}</div><div class="dl">إجمالي المعلمين</div></div>
+    <div class="dash-card"><div class="dash-icon" style="background:#e6f7ec;color:var(--green)">✅</div><div class="dv" style="color:var(--green)">${complete}</div><div class="dl">مكتمل النصاب</div></div>
+    <div class="dash-card"><div class="dash-icon" style="background:#fdeaea;color:var(--red2)">⚠️</div><div class="dv" style="color:var(--red2)">${deficit}</div><div class="dl">ناقص النصاب</div></div>
+    <div class="dash-card"><div class="dash-icon" style="background:#e8f0fe;color:var(--blue2)">➕</div><div class="dv" style="color:var(--blue2)">${excess}</div><div class="dl">زائد النصاب</div></div>
+    <div class="dash-card"><div class="dash-icon" style="background:#fdf3e0;color:var(--gold)">🗂️</div><div class="dv" style="color:var(--gold)">${deputies}</div><div class="dl">وكلاء</div></div>
+    <div class="dash-card"><div class="dash-icon" style="background:#f2e8fb;color:#6a1b9a">🎓</div><div class="dv" style="color:#6a1b9a">${specialists}</div><div class="dl">بدون نصاب</div></div>
+    <div class="dash-card"><div class="dash-icon" style="background:${subjsWithUncov>0?'#fdf3e0':'#e6f7ec'};color:${subjsWithUncov>0?'#856404':'var(--green)'}">📚</div><div class="dv" style="color:${subjsWithUncov>0?'#856404':'var(--green)'}">${subjsWithUncov}</div><div class="dl">مواد بفصول غير مغطاة</div></div>
+    <div class="dash-card"><div class="dash-icon" style="background:${totalUncovClasses>0?'#fdf3e0':'#e6f7ec'};color:${totalUncovClasses>0?'#856404':'var(--green)'}">🏫</div><div class="dv" style="color:${totalUncovClasses>0?'#856404':'var(--green)'}">${totalUncovClasses}</div><div class="dl">إجمالي الفصول الغير مغطاة</div></div>
+  </div>`;
+
+  // روابط سريعة — نفس فلسفة "أفضل عروض وخدمات" في التطبيق المرجعي: أيقونة + تسمية لأكتر الوجهات استخدامًا
+  html+=`<div style="font-weight:800;font-size:.82rem;color:#374151;margin-bottom:8px">⚡ روابط سريعة</div>
+  <div class="quick-grid">
+    <div class="quick-tile" onclick="ttGoPage('quota')"><div class="qi" style="background:#fdeaea;color:var(--red2)">⚠️</div><div class="ql">كشف النصاب</div></div>
+    <div class="quick-tile" onclick="ttGoPage('deficit')"><div class="qi" style="background:#fdeaea;color:var(--red2)">🔴</div><div class="ql">كشف العجز</div></div>
+    <div class="quick-tile" onclick="ttGoPage('timetable')"><div class="qi" style="background:#e8f0fe;color:var(--blue)">🗓️</div><div class="ql">الجداول</div></div>
+    <div class="quick-tile" onclick="ttGoPage('teachers')"><div class="qi" style="background:#e8f0fe;color:var(--blue)">👩‍🏫</div><div class="ql">المعلمون</div></div>
+    <div class="quick-tile" onclick="ttGoPage('budget')"><div class="qi" style="background:#fdf3e0;color:var(--gold)">📊</div><div class="ql">بيان العجز والزيادة</div></div>
+    <div class="quick-tile" onclick="ttGoPage('staff')"><div class="qi" style="background:#f2e8fb;color:#6a1b9a">🏢</div><div class="ql">الأقسام الإدارية</div></div>
   </div>`;
 
   // progress bars
@@ -3610,6 +3635,16 @@ function hardRefreshApp(){
 // ═══════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════
+// ── يفتح صفحة من روابط سريعة (بطاقات لوحة التحكم) مع تفعيل الزرار المطابق في القائمة الجانبية ──
+function ttGoPage(name){
+  var btn=null;
+  document.querySelectorAll('.nav-btn').forEach(function(b){
+    if(btn) return;
+    var oc=b.getAttribute('onclick')||'';
+    if(oc.indexOf("showPage('"+name+"'")===0) btn=b;
+  });
+  showPage(name,btn);
+}
 function showPage(name,btn){
   if(document.getElementById('subjectGrid')?.children.length>0)collectSubjects();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -7230,6 +7265,16 @@ function ttClsName(dept,idx){
   var scfg=ttScfg(dept);
   return (scfg.classNames&&scfg.classNames[idx])||('ف'+(idx+1));
 }
+// ── تقسيم فصل بين مواد لمعلمين مختلفين: يرجّع المادة الخاصة بالمعلم ده تحديدًا من خانة مقسَّمة،
+//    بدل اسم المادة المدموج (زي "دين إسلامي/مسيحي") اللي بيتعرض في جدول الفصل نفسه ──
+function ttSlotSubjForTeacher(slot,teacherName){
+  if(!slot) return '';
+  if(slot.isSplit&&slot.splitGroups&&slot.splitGroups.length){
+    var grp=slot.splitGroups.find(function(g){return g&&typeof g==='object'&&g.teacher===teacherName;});
+    if(grp&&grp.subject) return grp.subject;
+  }
+  return slot.subj||'';
+}
 
 // ── تبديل التبويبات ──
 function ttSwitch(n){
@@ -7661,21 +7706,31 @@ function ttSRender(){
     // تهيئة splitGroups من المعلمين
     if(ss.isSplit){
       if(!ss.splitGroups) ss.splitGroups=[];
-      tchers.forEach(function(t,i){if(!ss.splitGroups[i])ss.splitGroups[i]={name:'مجموعة '+(i+1),teacher:t.name};});
+      tchers.forEach(function(t,i){if(!ss.splitGroups[i])ss.splitGroups[i]={name:'مجموعة '+(i+1),teacher:t.name,subject:''};});
     }
     var splitSection='';
     if(ss.isSplit&&tchers.length){
       var teachOpts='<option value="">-- اختر --</option>'+tchers.map(function(t){return '<option value="'+t.name.replace(/"/g,'&quot;')+'">'+t.name+'</option>';}).join('');
+      var subjOpts='<option value="">'+subj+' (نفس المادة)</option>'+subjs.filter(function(s2){return s2!==subj;}).map(function(s2){return '<option value="'+s2.replace(/"/g,'&quot;')+'">'+s2+'</option>';}).join('');
       splitSection='<div style="margin-top:8px;padding:10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px">'
-        +'<div style="font-size:8.5pt;font-weight:600;color:#1e3a8a;margin-bottom:6px">👥 '+autoCount+' مجموعة (من التعيينات):</div>'
+        +'<div style="font-size:8.5pt;font-weight:600;color:#1e3a8a;margin-bottom:6px">👥 '+autoCount+' مجموعة (من التعيينات) — كل مجموعة ممكن تكون مادة مختلفة، وبتتحسب حصة واحدة للفصل:</div>'
         +tchers.map(function(t,i){
-          var grp=(ss.splitGroups&&ss.splitGroups[i])||{name:'مجموعة '+(i+1),teacher:t.name};
+          var grp=(ss.splitGroups&&ss.splitGroups[i])||{name:'مجموعة '+(i+1),teacher:t.name,subject:''};
           var gname=typeof grp==='string'?grp:(grp.name||'مجموعة '+(i+1));
-          var gteach=typeof grp==='string'?grp:(grp.teacher||'');
+          var gsubj=typeof grp==='string'?'':(grp.subject||'');
+          // معلمو مادة المجموعة دي تحديدًا (لو مادة المجموعة مختلفة عن المادة الأصلية)
+          var effSubj=gsubj||subj;
+          var gTchers=(S.teachers||[]).filter(function(tt2){
+            return !isDeficitTeacher(tt2)&&(tt2.assignments||[]).some(function(a){return a.dept===TT.sDept&&subjMatch(a.subject,effSubj)&&(a.classes||0)>0;});
+          });
+          var gTeachOpts='<option value="">-- اختر --</option>'+gTchers.map(function(t2){return '<option value="'+t2.name.replace(/"/g,'&quot;')+'">'+t2.name+'</option>';}).join('');
           return '<div style="background:#fff;border:1px solid #bfdbfe;border-radius:6px;padding:7px;margin-bottom:5px">'
             +'<input type="text" value="'+gname.replace(/"/g,'&quot;')+'" placeholder="اسم المجموعة" data-subj="'+subj.replace(/"/g,'&quot;')+'" data-idx="'+i+'" data-f="name" onchange="ttSGrpFld(this)" style="width:100%;padding:4px 8px;border:1px solid #93c5fd;border-radius:5px;font-family:Cairo,sans-serif;font-size:8.5pt;direction:rtl;margin-bottom:5px;box-sizing:border-box">'
+            +'<div class="u-flex-g6" style="margin-bottom:5px"><span class="u-muted">مادة المجموعة:</span>'
+              +'<select data-subj="'+subj.replace(/"/g,'&quot;')+'" data-idx="'+i+'" data-f="subject" onchange="ttSGrpFld(this)" style="flex:1;padding:4px;border:1px solid #d1d5db;border-radius:5px;font-family:Cairo,sans-serif;font-size:8.5pt;direction:rtl">'+subjOpts+'</select>'
+            +'</div>'
             +'<div class="u-flex-g6"><span class="u-muted">معلم:</span>'
-              +'<select data-subj="'+subj.replace(/"/g,'&quot;')+'" data-idx="'+i+'" data-f="teacher" onchange="ttSGrpFld(this)" style="flex:1;padding:4px;border:1px solid #d1d5db;border-radius:5px;font-family:Cairo,sans-serif;font-size:8.5pt;direction:rtl">'+teachOpts+'</select>'
+              +'<select data-subj="'+subj.replace(/"/g,'&quot;')+'" data-idx="'+i+'" data-f="teacher" onchange="ttSGrpFld(this)" style="flex:1;padding:4px;border:1px solid #d1d5db;border-radius:5px;font-family:Cairo,sans-serif;font-size:8.5pt;direction:rtl">'+gTeachOpts+'</select>'
             +'</div></div>';
         }).join('')
       +'</div>';
@@ -7684,8 +7739,11 @@ function ttSRender(){
         tchers.forEach(function(t,i){
           var grp=(ss.splitGroups&&ss.splitGroups[i]);
           var gt=typeof grp==='string'?grp:(grp&&grp.teacher)||'';
-          var sel=cont.querySelector('[data-subj="'+subj.replace(/"/g,'&quot;')+'"][data-idx="'+i+'"][data-f="teacher"]');
-          if(sel&&gt) sel.value=gt;
+          var gs=typeof grp==='string'?'':((grp&&grp.subject)||'');
+          var selT=cont.querySelector('[data-subj="'+subj.replace(/"/g,'&quot;')+'"][data-idx="'+i+'"][data-f="teacher"]');
+          if(selT&&gt) selT.value=gt;
+          var selS=cont.querySelector('[data-subj="'+subj.replace(/"/g,'&quot;')+'"][data-idx="'+i+'"][data-f="subject"]');
+          if(selS) selS.value=gs;
         });
       },0);
     }
@@ -7728,8 +7786,10 @@ function ttSGrpFld(el){
   var subj=el.dataset.subj;var idx=+el.dataset.idx;var f=el.dataset.f;
   var ss=ttSset(subj);
   if(!ss.splitGroups) ss.splitGroups=[];
-  if(!ss.splitGroups[idx]||typeof ss.splitGroups[idx]==='string') ss.splitGroups[idx]={name:'مجموعة '+(idx+1),teacher:''};
+  if(!ss.splitGroups[idx]||typeof ss.splitGroups[idx]==='string') ss.splitGroups[idx]={name:'مجموعة '+(idx+1),teacher:'',subject:''};
   ss.splitGroups[idx][f]=el.value;
+  // لو مادة المجموعة اتغيّرت، لازم قائمة المعلمين تتحدّث لتطابق المادة الجديدة — فنعيد الرسم
+  if(f==='subject'){ss.splitGroups[idx].teacher='';saveState();ttSRender();return;}
   saveState();
   if(f==='name') toast('✅ اسم المجموعة '+(idx+1)+': '+el.value);
 }
@@ -7813,6 +7873,8 @@ function ttShowConstraintsMenu(){
   }
   dd.appendChild(mkBtn('➕ قيد بين مادتين',addSubjectRelationConstraint,'#059669'));
   dd.appendChild(mkBtn('📋 القيود الحالية',showCustomConstraints,'#059669'));
+  dd.appendChild(mkBtn('🔗 مزامنة فصلين (حصة مدمجة)',addClassSyncConstraint,'#0369a1'));
+  dd.appendChild(mkBtn('📋 مزامنات الفصول الحالية',showClassSyncList,'#0369a1'));
   var cl=document.createElement('button');
   cl.textContent='✕ إغلاق';cl.style.cssText='display:block;width:100%;padding:5px;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;color:#6b7280;font-family:Cairo,sans-serif;font-size:8pt;cursor:pointer;margin-top:4px';
   cl.addEventListener('click',function(){dd.remove();});dd.appendChild(cl);
@@ -7940,8 +8002,13 @@ function ttBuildLessons(depts,cfg){
       for(var cls=0;cls<sub.classes;cls++){
         if(ss.isSplit&&ss.splitGroups&&ss.splitGroups.length){
           var splitT=ss.splitGroups.map(function(g){return (typeof g==='string'?g:(g&&g.teacher))||'';});
+          // ── تقسيم فصل بين مواد مختلفة لمعلمين مختلفين، بيتحسب حصة واحدة للفصل ──
+          // اسم المادة المعروض على مستوى الفصل = دمج مواد المجموعات المختلفة (لو موجودة)، وإلا اسم المادة الأصلي
+          var grpSubjs=ss.splitGroups.map(function(g){return (typeof g==='string'?'':(g&&g.subject))||sub.name;});
+          var distinctSubjs=grpSubjs.filter(function(s2,i2){return grpSubjs.indexOf(s2)===i2;});
+          var combinedSubj=distinctSubjs.length>1?distinctSubjs.join('/'):sub.name;
           for(var w=0;w<sub.weekly;w++)
-            lessons.push({id:lessons.length,dept:dept,cls:cls,subj:sub.name,teacher:splitT[0]||'',teachers:splitT,isSplit:true,splitGroups:ss.splitGroups,ss:ss,weekly:sub.weekly});
+            lessons.push({id:lessons.length,dept:dept,cls:cls,subj:combinedSubj,teacher:splitT[0]||'',teachers:splitT,isSplit:true,splitGroups:ss.splitGroups,ss:ss,weekly:sub.weekly});
         } else {
           var teacher=tchers.length?tchers[cls%tchers.length]:'';
           for(var w=0;w<sub.weekly;w++)
@@ -8024,6 +8091,18 @@ function ttRM(data,lid){
 // (30000) في دالة التقييم يقدر الخوارزمية تتجاوزها لو مفيش بديل، بقى استبعاد فعلي تام من
 // مساحة الحل: أي خانة المعلم فيها مقفول (غير متاح حسب إعداداته) أو مشغول فعليًا في قسم
 // تاني اتولّد جدوله قبل كده، متتفحصش أصلاً كخيار — لا في التوليد الأول ولا في التحسين (SA). ──
+// ── قيود الفصول: مزامنة فصلين — بيسمح لنفس المعلم يكون في فصلين في نفس اليوم/الحصة عمدًا
+//    (زي حصة مدمجة أو نشاط مشترك)، بدل ما يتعامل معاها النظام كتعارض حقيقي ──
+function ttClassesSynced(dept,cls1,cls2,subj){
+  if(cls1===cls2) return true; // نفس الفصل أصلاً مش تعارض
+  var list=S.timetableClassSync||[];
+  return list.some(function(sy){
+    if(sy.dept!==dept) return false;
+    if(!sy.classes||sy.classes.indexOf(cls1)<0||sy.classes.indexOf(cls2)<0) return false;
+    if(sy.subject&&subj&&!subjMatch(sy.subject,subj)) return false;
+    return true;
+  });
+}
 function ttHardBlocked(data,lid,d,p){
   var l=data.lessons[lid];var m=data.deptMeta[l.dept];if(!m)return true;
   if(p>=(m.dayMax[d]!==undefined?m.dayMax[d]:m.nP)) return true; // برّه حدود اليوم أصلاً
@@ -8039,7 +8118,10 @@ function ttHardBlocked(data,lid,d,p){
     var sb=m.sharedBlocked&&m.sharedBlocked[t];
     if(sb&&sb.some(function(b){return b.dn===dn&&b.pi===p;})) return true; // مشغول فعليًا في قسم تاني
     var occT=data.tG[t]&&data.tG[t][d]?data.tG[t][d][p]:-1; // معلم مقفول في حصة تانية بنفس الموعد
-    if(occT>=0&&occT!==lid&&data.lessons[occT]&&data.lessons[occT]._locked) return true;
+    if(occT>=0&&occT!==lid&&data.lessons[occT]&&data.lessons[occT]._locked){
+      var otherL=data.lessons[occT];
+      if(!ttClassesSynced(l.dept,l.cls,otherL.cls,l.subj)) return true;
+    }
     return false;
   });
 }
@@ -8060,7 +8142,11 @@ function ttLC(data,lid,d,p){
   (l.teachers||[l.teacher]).forEach(function(t){
     if(!t)return;
     var tc=data.tG[t]&&data.tG[t][d]?data.tG[t][d][p]:-1;
-    if(tc>=0&&tc!==lid) s+=50000;
+    if(tc>=0&&tc!==lid){
+      var otherL=data.lessons[tc];
+      // قيود الفصول: لو الفصلين معلنين كـ"مزامنة" (حصة مدمجة عمدًا)، ما نعاقبش على نفس المعلم
+      if(!otherL||!ttClassesSynced(l.dept,l.cls,otherL.cls,l.subj)) s+=50000;
+    }
     var ts=S.timetableTeacherSettings&&S.timetableTeacherSettings[t];
     if(ts&&ts.blocked&&ts.blocked.indexOf(dn+'_'+p)>=0) s+=30000;
     var sb=m.sharedBlocked&&m.sharedBlocked[t];
@@ -8317,6 +8403,46 @@ function showCustomConstraints(){
   }
 }
 
+// ── قيود الفصول 1: مزامنة فصلين — يسمح لنفس المعلم يكون في فصلين في نفس اليوم/الحصة عمدًا
+//    (حصة مدمجة، نشاط مشترك...) بدل ما يتحسب تعارض حقيقي في الفحص أو التوليد ──
+function addClassSyncConstraint(){
+  var depts=S.departments||[];
+  var dept=prompt('في أنهي قسم؟ (اكتب الاسم بالظبط)\n\n'+depts.join('\n'));
+  if(!dept) return;
+  dept=dept.trim();
+  if(depts.indexOf(dept)<0){toast('⚠ اسم القسم مش موجود بالظبط');return;}
+  var nc=ttMaxCls(dept);
+  if(!nc){toast('⚠ القسم ده مفيهوش فصول معرَّفة');return;}
+  var classList='';
+  for(var i=0;i<nc;i++) classList+=(i+1)+') '+ttClsName(dept,i)+'\n';
+  var picked=prompt('اختار أرقام الفصول اللي هتتزامن (افصل بينهم بفاصلة)، فصلين على الأقل:\n\n'+classList);
+  if(!picked) return;
+  var idxs=picked.split(/[,،]/).map(function(s){return parseInt(s.trim())-1;}).filter(function(n){return n>=0&&n<nc;});
+  idxs=idxs.filter(function(n,i){return idxs.indexOf(n)===i;}); // إزالة التكرار
+  if(idxs.length<2){toast('⚠ محتاج فصلين على الأقل من غير تكرار');return;}
+  var subj=prompt('اسم مادة معيّنة بس تتزامن فيها (اختياري) — سيبها فاضية لو المزامنة تشتغل لأي مادة:');
+  if(!S.timetableClassSync) S.timetableClassSync=[];
+  S.timetableClassSync.push({id:'sy_'+Date.now().toString(36),dept:dept,classes:idxs,subject:(subj||'').trim()});
+  saveState();
+  var clsNames=idxs.map(function(i2){return ttClsName(dept,i2);}).join('، ');
+  toast('✅ اتضافت مزامنة: '+clsNames+' — هتتفعّل في التوليد الجاي');
+}
+function showClassSyncList(){
+  var list=S.timetableClassSync||[];
+  if(!list.length){toast('⚠ لا توجد مزامنات فصول مضافة');return;}
+  var msg=list.map(function(sy,i){
+    var clsNames=(sy.classes||[]).map(function(c){return ttClsName(sy.dept,c);}).join('، ');
+    return (i+1)+'. '+sy.dept+': '+clsNames+(sy.subject?' — مادة: '+sy.subject:' — أي مادة');
+  }).join('\n');
+  var del=prompt(msg+'\n\nاكتب رقم المزامنة اللي عايز تحذفها، أو سيب فاضي للإلغاء:');
+  var idx=parseInt(del);
+  if(idx>=1 && idx<=list.length){
+    list.splice(idx-1,1);
+    saveState();
+    toast('🗑 اتحذفت المزامنة');
+  }
+}
+
 function ttGreedy(data){
   ttIG(data);data.assign=data.lessons.map(function(){return null;});
   // ── بند 5 (تكملة): ثبّت الحصص المقفولة يدويًا في أماكنها الأصلية أولاً، قبل أي بحث عن مواضع ──
@@ -8442,14 +8568,22 @@ function ttBuildResult(data,depts){
         var prevC=timetable[l.dept][cid][a.day][a.period];
         clashLog.push({type:'class',dept:l.dept,cls:l.cls,day:a.day,period:a.period,subjA:prevC.subj,subjB:l.subj});
       }
-      if(l.teacher){
-        var tk=l.teacher+'|'+slotKey;
-        if(teacherUse[tk]!==undefined){
-          var other=data.lessons[teacherUse[tk]];
-          clashLog.push({type:'teacher',teacher:l.teacher,day:a.day,period:a.period,deptA:other.dept,subjA:other.subj,deptB:l.dept,subjB:l.subj});
-        }else{
-          teacherUse[tk]=i;
-        }
+      if(l.teachers&&l.teachers.length||l.teacher){
+        (l.teachers&&l.teachers.length?l.teachers:[l.teacher]).forEach(function(tn){
+          if(!tn) return;
+          var tk=tn+'|'+slotKey;
+          if(teacherUse[tk]!==undefined){
+            var other=data.lessons[teacherUse[tk]];
+            // قيود الفصول: لو الفصلين دول معلنين "مزامنة" عمدًا (نفس القسم)، ده مش تعارض حقيقي
+            if(other.dept===l.dept&&ttClassesSynced(l.dept,l.cls,other.cls,l.subj)){
+              // تجاهل — مزامنة مقصودة
+            } else {
+              clashLog.push({type:'teacher',teacher:tn,day:a.day,period:a.period,deptA:other.dept,subjA:other.subj,deptB:l.dept,subjB:l.subj});
+            }
+          }else{
+            teacherUse[tk]=i;
+          }
+        });
       }
       if(!timetable[l.dept][cid][a.day]) timetable[l.dept][cid][a.day]={};
       timetable[l.dept][cid][a.day][a.period]={subj:l.subj,teacher:l.teacher,teachers:l.teachers,isSplit:l.isSplit,splitGroups:l.isSplit?l.splitGroups:null};
@@ -8513,16 +8647,22 @@ function ttGetCellConflicts(teacher,c){
     msgs.push('🔒 المعلم مقفول (غير متاح) في هذا اليوم/الحصة أصلاً حسب إعداداته.');
   }
   // 2) هل المعلم بيدرّس بالفعل في نفس اليوم/الحصة في أي فصل تاني (نفس القسم أو قسم تاني)؟
+  var cCls=+String(c.cid).replace('cls_','');
   Object.keys(S.generatedTimetable||{}).forEach(function(dept){
     var res=S.generatedTimetable[dept];var tt=res&&res.timetable&&res.timetable[dept];
     if(!tt) return;
     Object.keys(tt).forEach(function(cid){
       if(dept===c.dept&&cid===c.cid) return; // استبعاد نفس الخانة اللي بنعدلها
       var slot=tt[cid]&&tt[cid][c.d]&&tt[cid][c.d][c.p];
-      if(slot&&slot.teacher===teacher){
-        var clsName=ttClsName(dept,+cid.replace('cls_',''));
-        msgs.push('⚠️ بيدرّس بالفعل «'+(slot.subj||'بدون مادة')+'» في «'+clsName+'» ('+dept+') بنفس اليوم والحصة.');
+      var isTeacher=slot&&(slot.teacher===teacher||(slot.teachers&&slot.teachers.indexOf(teacher)>=0));
+      if(!isTeacher) return;
+      // قيود الفصول: لو الفصلين دول معلنين "مزامنة" في نفس القسم، ده مش تعارض — عمدًا
+      if(dept===c.dept){
+        var otherCls=+String(cid).replace('cls_','');
+        if(ttClassesSynced(dept,cCls,otherCls,slot.subj)) return;
       }
+      var clsName=ttClsName(dept,+cid.replace('cls_',''));
+      msgs.push('⚠️ بيدرّس بالفعل «'+(slot.subj||'بدون مادة')+'» في «'+clsName+'» ('+dept+') بنفس اليوم والحصة.');
     });
   });
   return msgs;
@@ -8992,9 +9132,13 @@ function ttRenderTeacherView(dept,res,days,pers){
   classIds.forEach(function(cid,ci){
     for(var d=0;d<days.length;d++) for(var p=0;p<pers.length;p++){
       var slot=tt[cid][d]&&tt[cid][d][p];
-      if(!slot||!slot.teacher) continue;
-      if(!teacherMap[slot.teacher]) teacherMap[slot.teacher]=[];
-      teacherMap[slot.teacher].push({cid:cid,ci:ci,d:d,p:p,slot:slot});
+      if(!slot) continue;
+      var tlist=slot.teachers&&slot.teachers.length?slot.teachers:[slot.teacher];
+      tlist.forEach(function(tn){
+        if(!tn) return;
+        if(!teacherMap[tn]) teacherMap[tn]=[];
+        teacherMap[tn].push({cid:cid,ci:ci,d:d,p:p,slot:slot});
+      });
     }
   });
   var teachers=Object.keys(teacherMap).sort();
@@ -9018,11 +9162,14 @@ function ttRenderTeacherView(dept,res,days,pers){
   classIds.forEach(function(cid,ci){
     for(var d=0;d<days.length;d++) for(var p=0;p<pers.length;p++){
       var slot=tt[cid][d]&&tt[cid][d][p];
-      if(slot&&slot.teacher){
-        var k=slot.teacher+'|'+d+'|'+p;
+      if(!slot) continue;
+      var tlist=slot.teachers&&slot.teachers.length?slot.teachers:[slot.teacher];
+      tlist.forEach(function(tn){
+        if(!tn) return;
+        var k=tn+'|'+d+'|'+p;
         if(!lookup[k]) lookup[k]=[];
         lookup[k].push({slot:slot,ci:ci,cid:cid});
-      }
+      });
     }
   });
 
@@ -9039,9 +9186,10 @@ function ttRenderTeacherView(dept,res,days,pers){
           var entry=entries[0];
           var slot=entry.slot;
           var clsName=ttClsName(dept,entry.ci);
-          var sShort=ttTSubj(slot.subj||'').substring(0,5);
-          var bg=slot.isSplit?ttSubjColorLight(slot.subj):ttSubjColorLight(slot.subj);
-          var border='border-right:3px solid '+ttSubjColor(slot.subj)+';';
+          var mySubj=ttSlotSubjForTeacher(slot,t);
+          var sShort=ttTSubj(mySubj).substring(0,5);
+          var bg=ttSubjColorLight(mySubj);
+          var border='border-right:3px solid '+ttSubjColor(mySubj)+';';
           html+='<td style="padding:2px 3px;border:1px solid #e5e7eb;text-align:center;background:'+bg+';'+bdr+border+'">'
             +'<div style="font-size:7pt;font-weight:700;color:#1a3a5c">'+sShort+'</div>'
             +'<div style="font-size:5.5pt;color:#6b7280">'+clsName+'</div>'
@@ -9463,13 +9611,14 @@ function ttViewSingleTeacher(dept,res,days,pers,tt,tName){
       var found=null;
       classIds.forEach(function(cid,ci){
         var sl=tt[cid]&&tt[cid][di]&&tt[cid][di][pi];
-        if(sl&&sl.teacher===tName&&!found) found={sl:sl,ci:ci,cid:cid};
+        var isMe=sl&&(sl.teacher===tName||(sl.teachers&&sl.teachers.indexOf(tName)>=0));
+        if(isMe&&!found) found={sl:sl,ci:ci,cid:cid};
       });
       if(found){
-        var sl=found.sl;var color=ttSubjColor(sl.subj||'');var clsName=ttClsName(dept,found.ci);
+        var sl=found.sl;var mySubj=ttSlotSubjForTeacher(sl,tName);var color=ttSubjColor(mySubj);var clsName=ttClsName(dept,found.ci);
         html+='<td class="tt-cell" style="padding:5px 4px;border:1px solid #e2e8f0;text-align:center;background:'+color+'18;border-top:3px solid '+color+';cursor:pointer"'
-          +' title="'+( sl.subj||'')+' — '+clsName+'">'
-          +'<div style="font-size:8.5pt;font-weight:700;color:#1a3a5c">'+ttTSubj(sl.subj||'')+'</div>'
+          +' title="'+(mySubj||'')+' — '+clsName+'">'
+          +'<div style="font-size:8.5pt;font-weight:700;color:#1a3a5c">'+ttTSubj(mySubj)+'</div>'
           +'<div style="font-size:7pt;color:#6b7280">'+clsName+'</div>'
           +'</td>';
       } else {
