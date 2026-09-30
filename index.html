@@ -1371,9 +1371,16 @@ function togglePw(){const i=document.getElementById('pwInput');i.type=i.type==='
 const STORAGE_KEY = 'lycee_liberte_data_v4'; // لسه مستخدم كنسخة احتياطية محلية (offline fallback) بس
 const FS_STATE_DOC = fbDb.collection('appState').doc('main');
 let _fsSaveInFlight = false, _fsSavePending = false;
+// لو التحميل من قاعدة البيانات فشل ومفيش نسخة محلية، S بيبقى فاضي/افتراضي — أي حفظ ساعتها
+// هيكتب فوق البيانات الحقيقية في Firestore ويمسحها، فبنوقف الحفظ خالص لحد ما الصفحة تتحدّث
+let _stateLoadFailed = false;
 
 // ── الحفظ: بيكتب كل حاجة في Firestore (مستند واحد شامل)، وبيحتفظ بنسخة محلية مشفّرة كخط رجعة ──
 function saveState(){
+  if(_stateLoadFailed){
+    toast('⚠️ البيانات ماتحمّلتش من قاعدة البيانات — التعديل ده مش هيتحفظ. حدّث الصفحة بعد ما النت يرجع.');
+    return;
+  }
   // نسخة محلية فورية (خط رجعة لو النت اتقطع فجأة أثناء الكتابة لـ Firestore)
   try{ localStorage.setItem(STORAGE_KEY,_enc(JSON.stringify(S))); }catch(e){}
   _queueFirestoreSave();
@@ -1437,6 +1444,7 @@ async function loadState(){
       const _s4=localStorage.getItem(STORAGE_KEY);
       if(_s4){const _d4=_dec(_s4)||_s4; const p=JSON.parse(_d4); if(p.departments&&p.subjects&&p.teachers){ Object.assign(S,p); toast('⚠️ اتحمّلت نسخة محلية قديمة (تعذّر الوصول لقاعدة البيانات)'); return true; } }
     }catch(e2){}
+    _stateLoadFailed=true;
     return false;
   }
 }
@@ -2009,7 +2017,7 @@ function getDominantLevel(t){
   (t.assignments||[]).forEach(a=>{
     if(!a.classes||!a.subject)return;
     const lvl=getDeptLevel(a.dept);
-    const sub=(S.subjects[a.dept]||[]).find(s=>s.name===a.subject);
+    const sub=(S.subjects[a.dept]||[]).find(s=>subjMatch(s.name,a.subject));
     lvlHours[lvl]=(lvlHours[lvl]||0)+(sub?.weekly||1)*a.classes;
     hasAny=true;
   });
@@ -3181,6 +3189,8 @@ function restoreData(input){
         const staffTxt=meta.staffCount?`\n• ${meta.staffCount} موظف إداري في ${meta.staffSections||'?'} قسم`:'';
         if(!confirm(`🔄 استعادة كاملة:\n• ${meta.teachersCount} معلم\n• ${meta.deptsCount} قسم تعليمي${staffTxt}\n\nسيتم استبدال كل البيانات الحالية.`))return;
 
+        // استعادة كاملة مقصودة من المستخدم — مسموح لها تكتب على قاعدة البيانات حتى لو التحميل كان فشل
+        _stateLoadFailed=false;
         // استعادة كل المفاتيح (ما عدا الخاصة بالجهاز)
         const SKIP=new Set(['__meta__','lycee_device_id','lycee_cloud_cfg','lycee_cloud_ts','lycee_cloud_last_ts']);
         for(const [key,val] of Object.entries(p)){
@@ -3903,7 +3913,9 @@ const DEFAULT_WEEKLY_BY_LEVEL = {
 
 async function initApp(){
   const loaded=await loadState();
-  if(!loaded){
+  if(!loaded&&_stateLoadFailed){
+    alert('❌ تعذّر تحميل البيانات من قاعدة البيانات، ومفيش نسخة محلية على الجهاز ده.\n\nأي تعديل دلوقتي مش هيتحفظ عشان ما يمسحش البيانات الأصلية.\nتأكد من النت وحدّث الصفحة.');
+  } else if(!loaded){
     S.teachers=JSON.parse(JSON.stringify(INITIAL_TEACHERS_RAW));
     const deptSubjs={};S.teachers.forEach(t=>{(t.assignments||[]).forEach(a=>{if(!a.subject)return;if(!deptSubjs[a.dept])deptSubjs[a.dept]=new Set();deptSubjs[a.dept].add(a.subject);});});
     S.departments.forEach(dept=>{const level=getDeptLevel(dept);const lvlMap=DEFAULT_WEEKLY_BY_LEVEL[level]||{};const autoSubs=deptSubjs[dept]?[...deptSubjs[dept]]:[];S.subjects[dept]=autoSubs.map(name=>{const totalCls=Math.round(S.teachers.reduce((sum,t)=>sum+(t.assignments||[]).filter(a=>a.dept===dept&&subjMatch(a.subject,name)).reduce((s,a)=>s+(a.classes||0),0),0)*10)/10;const weekly=lvlMap[name]!==undefined?lvlMap[name]:(DEFAULT_WEEKLY[name]||0);return{name,weekly,classes:totalCls};});});
