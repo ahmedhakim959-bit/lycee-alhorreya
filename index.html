@@ -1374,6 +1374,16 @@ let _fsSaveInFlight = false, _fsSavePending = false;
 // لو التحميل من قاعدة البيانات فشل ومفيش نسخة محلية، S بيبقى فاضي/افتراضي — أي حفظ ساعتها
 // هيكتب فوق البيانات الحقيقية في Firestore ويمسحها، فبنوقف الحفظ خالص لحد ما الصفحة تتحدّث
 let _stateLoadFailed = false;
+// Firestore بيرفض أي مستند أكبر من 1 ميجا — نحذّر بدري عند 800 كيلو (مرة واحدة في الجلسة)
+let _stateSizeWarned = false;
+function _checkStateSize(){
+  if(_stateSizeWarned) return;
+  let bytes=0; try{ bytes=new Blob([JSON.stringify(S)]).size; }catch(e){}
+  if(bytes>=800*1024){
+    _stateSizeWarned=true;
+    toast('⚠️ حجم البيانات قرّب من حد قاعدة البيانات ('+Math.round(bytes/1024)+' كيلو من 1024). الحفظ هيفشل لو عدّى الحد.');
+  }
+}
 
 // ── الحفظ: بيكتب كل حاجة في Firestore (مستند واحد شامل)، وبيحتفظ بنسخة محلية مشفّرة كخط رجعة ──
 function saveState(){
@@ -1389,6 +1399,7 @@ function _queueFirestoreSave(){
   if(_fsSaveInFlight){ _fsSavePending=true; return; }
   _fsSaveInFlight=true;
   const snapshot=JSON.parse(JSON.stringify(S)); // لقطة ثابتة وقت الإرسال
+  _checkStateSize();
   FS_STATE_DOC.set({
     data: snapshot,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -3142,8 +3153,14 @@ function undoLastImport(){
   logChange('restore','تراجع عن استيراد',snap.__meta__?.label||'');
   location.reload();
 }
-function backupData(){
+async function backupData(){
   saveState();
+  let archivesJson=null, archivesFailed=false;
+  if(!_stateLoadFailed){
+    toast('⏳ جاري تجهيز النسخة الاحتياطية (مع الأرشيف)...');
+    try{ const arr=await _archivesForBackup(); archivesJson=arr.length?JSON.stringify(arr):null; }
+    catch(e){ archivesFailed=true; console.error('[Backup] archives failed:',e); }
+  }
   // المفاتيح الخاصة بالجهاز — لا تُنقل بين الأجهزة
   const SKIP_KEYS=new Set(['lycee_device_id','lycee_cloud_cfg','lycee_cloud_ts','lycee_cloud_last_ts']);
   const staffCount=Object.values(S.staff||{}).reduce((s,a)=>s+a.length,0);
@@ -3164,6 +3181,7 @@ function backupData(){
     if(SKIP_KEYS.has(key)) continue;
     snapshot[key]=localStorage.getItem(key);
   }
+  if(archivesJson) snapshot[ARCHIVE_KEY]=archivesJson;
   const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -3174,7 +3192,7 @@ function backupData(){
   setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
   localStorage.setItem('lycee_last_backup_ts',Date.now().toString());
   logChange('backup','نسخ احتياطي كامل',`${S.teachers.length} معلم | ${S.departments.length} قسم | ${staffCount} موظف إداري`);
-  toast('💾 تم تحميل النسخة الاحتياطية الكاملة');
+  toast(archivesFailed?'⚠️ اتحمّلت النسخة الاحتياطية بس من غير أرشيف قاعدة البيانات (تعذّر الوصول ليه)':'💾 تم تحميل النسخة الاحتياطية الكاملة');
 }
 function restoreData(input){
   const file=input.files[0];if(!file)return;
@@ -3251,49 +3269,160 @@ function restoreData(input){
   reader.readAsText(file);
   input.value='';
 }
+// ═══════════════════════════════════════════
+// ARCHIVE — محفوظ في Firestore (مجموعة archives): كل أرشيف مستند بياناته الأساسية،
+// والبيانات نفسها مضغوطة (gzip) ومتقسمة على أجزاء في archives/{id}/chunks عشان حد الـ 1 ميجا للمستند.
+// الأرشيف القديم اللي في المتصفح (ARCHIVE_KEY) بيترفع تلقائيًا وبيتمسح من الجهاز بعد ما الرفع ينجح.
+// ═══════════════════════════════════════════
 const ARCHIVE_KEY='lycee_archive_v1';
-function getArchives(){try{return JSON.parse(localStorage.getItem(ARCHIVE_KEY)||'[]');}catch(e){return[];}}
-function buildArchiveSection(){
-  const archives=getArchives();
+const ARCHIVE_COL=fbDb.collection('archives');
+const FS_DOC_LIMIT=1048576, FS_DOC_WARN=800*1024;
+let _archivesCache=[], _archiveMigrating=null;
+
+function _getLocalArchives(){try{return JSON.parse(localStorage.getItem(ARCHIVE_KEY)||'[]');}catch(e){return[];}}
+function _setLocalArchives(arr){ if(arr.length) localStorage.setItem(ARCHIVE_KEY,JSON.stringify(arr)); else localStorage.removeItem(ARCHIVE_KEY); }
+function _stateSizeBytes(){ try{ return new Blob([JSON.stringify(S)]).size; }catch(e){ return 0; } }
+
+async function _packArchive(str){
+  if(typeof CompressionStream==='undefined') return {enc:'plain',data:str,chunk:300000};
+  const gz=new Blob([str]).stream().pipeThrough(new CompressionStream('gzip'));
+  const buf=new Uint8Array(await new Response(gz).arrayBuffer());
+  let bin='';for(let i=0;i<buf.length;i+=0x8000)bin+=String.fromCharCode.apply(null,buf.subarray(i,i+0x8000));
+  return {enc:'gzip-b64',data:btoa(bin),chunk:900000};
+}
+async function _unpackArchive(enc,data){
+  if(enc!=='gzip-b64') return data;
+  const bin=atob(data);const buf=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
+  const gz=new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return await new Response(gz).text();
+}
+// ar: {year,teachers,date,data}
+async function _uploadArchive(ar){
+  const packed=await _packArchive(ar.data||'');
+  const parts=[];for(let i=0;i<packed.data.length;i+=packed.chunk)parts.push(packed.data.slice(i,i+packed.chunk));
+  if(!parts.length)parts.push('');
+  const ref=ARCHIVE_COL.doc();
+  // الأجزاء الأول، وبعدين المستند الأساسي — فالأرشيف ما يظهرش في القائمة إلا لو كل أجزائه اتحفظت
+  for(let i=0;i<parts.length;i++) await ref.collection('chunks').doc(String(i)).set({d:parts[i]});
+  await ref.set({year:ar.year||'',teachers:ar.teachers||0,date:ar.date||'',enc:packed.enc,chunks:parts.length,
+    rawSize:(ar.data||'').length,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  return ref.id;
+}
+async function _loadCloudArchives(){
+  const snap=await ARCHIVE_COL.get();
+  _archivesCache=snap.docs.map(d=>Object.assign({id:d.id},d.data()))
+    .sort((a,b)=>((a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0)-((b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0));
+  return _archivesCache;
+}
+async function _readCloudArchive(ar){
+  const snaps=await Promise.all(Array.from({length:ar.chunks},(_,i)=>ARCHIVE_COL.doc(ar.id).collection('chunks').doc(String(i)).get()));
+  const joined=snaps.map(s=>{if(!s.exists)throw new Error('جزء ناقص من الأرشيف');return s.data().d;}).join('');
+  return _unpackArchive(ar.enc,joined);
+}
+async function _deleteCloudArchive(ar){
+  for(let i=0;i<(ar.chunks||0);i++) await ARCHIVE_COL.doc(ar.id).collection('chunks').doc(String(i)).delete();
+  await ARCHIVE_COL.doc(ar.id).delete();
+}
+// رفع الأرشيف المحلي القديم (أو اللي رجع من نسخة احتياطية) لقاعدة البيانات
+function _migrateLocalArchives(){
+  if(_archiveMigrating) return _archiveMigrating;
+  const local=_getLocalArchives();
+  if(!local.length||_stateLoadFailed||!navigator.onLine) return Promise.resolve(0);
+  _archiveMigrating=(async()=>{
+    let done=0;
+    try{
+      const cloud=await _loadCloudArchives();
+      const remaining=[...local];
+      for(const ar of local){
+        // موجود بالفعل (مثلاً رجع من نسخة احتياطية لنفس الأرشيف) — ما نكررهوش
+        const dup=cloud.some(c=>c.year===(ar.year||'')&&c.date===(ar.date||'')&&c.rawSize===(ar.data||'').length);
+        if(!dup){ await _uploadArchive(ar); done++; }
+        remaining.shift(); _setLocalArchives(remaining);
+      }
+      if(done) toast(`☁️ اترفع ${done} أرشيف لقاعدة البيانات`);
+    }catch(e){
+      console.error('[Archive] migration failed:',e);
+      toast('⚠️ تعذّر رفع الأرشيف لقاعدة البيانات — لسه محفوظ على الجهاز ده. '+(e.code==='permission-denied'?'(قواعد Firestore مش سامحة بمجموعة archives)':''));
+    }
+    _archiveMigrating=null;
+    return done;
+  })();
+  return _archiveMigrating;
+}
+function _allArchives(){
+  return _archivesCache.map(a=>Object.assign({src:'cloud'},a))
+    .concat(_getLocalArchives().map((a,li)=>Object.assign({src:'local',li},a)));
+}
+function _renderArchiveSection(){
   const body=document.getElementById('archiveBody');if(!body)return;
+  const bytes=_stateSizeBytes(),kb=Math.round(bytes/1024),pct=Math.min(100,Math.round(bytes/FS_DOC_LIMIT*100));
+  const sizeColor=bytes>=FS_DOC_WARN?'var(--red2)':bytes>=FS_DOC_LIMIT*0.5?'var(--gold)':'var(--green)';
   let html=`<div style="display:flex;gap:8px;margin-bottom:12px">
     <button class="btn btn-green btn-sm" onclick="archiveCurrentYear()">📦 أرشفة العام الحالي</button>
-  </div>`;
-  if(!archives.length){html+='<p style="color:#aaa;font-size:.82rem">لا توجد أرشيفات محفوظة</p>';body.innerHTML=html;return;}
-  html+=`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>العام</th><th>المعلمون</th><th>التاريخ</th><th></th></tr></thead><tbody>`;
-  archives.forEach((ar,i)=>{
-    html+=`<tr><td><strong>${ar.year||'—'}</strong></td><td>${ar.teachers||0}</td><td style="font-size:.75rem;color:#888">${ar.date||'—'}</td>
+  </div>
+  <div style="font-size:.75rem;color:#666;margin-bottom:12px">حجم بيانات العام الحالي: <strong style="color:${sizeColor}">${kb} كيلو</strong> من 1024 (الحد الأقصى لقاعدة البيانات)
+    <div class="prog-wrap" style="margin-top:4px"><div class="prog-bar" style="width:${pct}%;background:${sizeColor}"></div></div></div>`;
+  const all=_allArchives();
+  if(!all.length){html+='<p style="color:#aaa;font-size:.82rem">لا توجد أرشيفات محفوظة</p>';body.innerHTML=html;return;}
+  html+=`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>العام</th><th>المعلمون</th><th>التاريخ</th><th>مكان الحفظ</th><th></th></tr></thead><tbody>`;
+  all.forEach((ar,i)=>{
+    const where=ar.src==='cloud'?'<span class="badge bg-green">☁️ قاعدة البيانات</span>':'<span class="badge bg-gold">📱 الجهاز بس</span>';
+    html+=`<tr><td><strong>${ar.year||'—'}</strong></td><td>${ar.teachers||0}</td><td style="font-size:.75rem;color:#888">${ar.date||'—'}</td><td>${where}</td>
       <td><button class="btn btn-ghost btn-sm" onclick="downloadArchive(${i})">⬇ تحميل</button> <button class="btn btn-del" onclick="deleteArchive(${i})">🗑</button></td></tr>`;
   });
   html+=`</tbody></table></div>`;
   body.innerHTML=html;
 }
-function archiveCurrentYear(){
+function buildArchiveSection(){
+  _renderArchiveSection();
+  if(_stateLoadFailed) return;
+  _migrateLocalArchives().then(()=>_loadCloudArchives()).then(_renderArchiveSection)
+    .catch(e=>console.warn('[Archive] load failed:',e));
+}
+async function archiveCurrentYear(){
+  if(_stateLoadFailed){toast('⚠️ البيانات ماتحمّلتش — حدّث الصفحة الأول');return;}
+  if(!navigator.onLine){toast('📴 الأرشفة محتاجة نت');return;}
   const year=prompt('أدخل العام الدراسي للأرشيف (مثال: 2026/2027):','2026/2027');
   if(!year)return;
-  const archives=getArchives();
-  if(archives.length>=5){if(!confirm('تم الوصول لـ 5 أرشيفات. قد يمتلئ مساحة التخزين.\nهل تريد الاستمرار وحذف الأرشيف الأقدم؟'))return;archives.shift();}
-  archives.push({year,teachers:S.teachers.length,date:new Date().toLocaleDateString('ar-EG'),data:JSON.stringify(S)});
+  toast('⏳ جاري حفظ الأرشيف في قاعدة البيانات...');
   try{
-    localStorage.setItem(ARCHIVE_KEY,JSON.stringify(archives));
+    await _uploadArchive({year,teachers:S.teachers.length,date:new Date().toLocaleDateString('ar-EG'),data:JSON.stringify(S)});
+    await _loadCloudArchives();
     logChange('backup','أرشفة',`العام ${year} – ${S.teachers.length} معلم`);
-    buildArchiveSection();toast('📦 تم أرشفة البيانات');
+    _renderArchiveSection();toast('📦 تم أرشفة البيانات في قاعدة البيانات');
   }catch(e){
-    archives.pop();toast('❌ مساحة التخزين ممتلئة – حمِّل النسخة الاحتياطية واحذف أرشيفاً قديماً أولاً');
+    console.error('[Archive] save failed:',e);
+    toast('❌ فشل حفظ الأرشيف: '+(e.code==='permission-denied'?'قواعد Firestore مش سامحة بمجموعة archives':e.message));
   }
 }
-function downloadArchive(i){
-  const archives=getArchives();const ar=archives[i];if(!ar)return;
-  const blob=new Blob([ar.data],{type:'application/json'});
+async function downloadArchive(i){
+  const ar=_allArchives()[i];if(!ar)return;
+  let data;
+  try{ data=ar.src==='cloud'?await _readCloudArchive(ar):ar.data; }
+  catch(e){ toast('❌ تعذّر تحميل الأرشيف: '+e.message); return; }
+  const blob=new Blob([data],{type:'application/json'});
   const url=URL.createObjectURL(blob);const a=document.createElement('a');
   a.href=url;a.download=`أرشيف_${ar.year?.replace('/','_')||i}.json`;
   document.body.appendChild(a);a.click();
   setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
 }
-function deleteArchive(i){
-  const archives=getArchives();if(!confirm(`حذف أرشيف ${archives[i]?.year}؟`))return;
-  archives.splice(i,1);localStorage.setItem(ARCHIVE_KEY,JSON.stringify(archives));
-  buildArchiveSection();toast('🗑 تم حذف الأرشيف');
+async function deleteArchive(i){
+  const ar=_allArchives()[i];if(!ar)return;
+  if(!confirm(`حذف أرشيف ${ar.year}؟`))return;
+  try{
+    if(ar.src==='cloud'){ await _deleteCloudArchive(ar); await _loadCloudArchives(); }
+    else{ const local=_getLocalArchives(); local.splice(ar.li,1); _setLocalArchives(local); }
+    _renderArchiveSection();toast('🗑 تم حذف الأرشيف');
+  }catch(e){ toast('❌ تعذّر حذف الأرشيف: '+e.message); }
+}
+// كل الأرشيفات (قاعدة البيانات + الجهاز) بنفس الشكل القديم — عشان تدخل في النسخة الاحتياطية الكاملة
+async function _archivesForBackup(){
+  const out=_getLocalArchives().slice();
+  const cloud=await _loadCloudArchives();
+  for(const ar of cloud){
+    out.push({year:ar.year,teachers:ar.teachers,date:ar.date,data:await _readCloudArchive(ar)});
+  }
+  return out;
 }
 
 // ═══════════════════════════════════════════
@@ -3922,6 +4051,7 @@ async function initApp(){
     saveState();
   }
   renderChips();renderSteps();updateDatalist();
+  if(!_stateLoadFailed) _migrateLocalArchives();
 }
 
 // ═══════════════════════════════════════════
