@@ -331,6 +331,11 @@ textarea{resize:vertical;min-height:56px;}
 .modal-ov{position:fixed;inset:0;background:rgba(13,27,42,.5);z-index:500;
   display:none;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(3px);}
 .modal-ov.open{display:flex;}
+/* النوافذ الثابتة بقت <dialog> وبتتفتح بـ showModal(): المتصفح بيوفر Esc وحبس التركيز وتعطيل الصفحة اللي ورا */
+dialog.modal-ov{width:100%;height:100%;max-width:none;max-height:none;margin:0;border:0;color:inherit;overscroll-behavior:contain;}
+dialog.modal-ov[open]{display:flex;}
+dialog.modal-ov::backdrop{background:transparent;}
+html.dlg-lock,html.dlg-lock body{overflow:hidden;}
 .modal-box{background:#fff;border-radius:13px;width:min(550px,100%);max-height:90vh;
   overflow-y:auto;box-shadow:0 18px 55px rgba(0,0,0,.25);animation:mIn .2s ease;}
 @keyframes mIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
@@ -1177,7 +1182,7 @@ textarea{resize:vertical;min-height:56px;}
 </div><!-- /app -->
 
 <!-- MODAL -->
-<div class="modal-ov" id="modalOv" onclick="if(event.target===this)closeModal()">
+<dialog class="modal-ov" id="modalOv" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <div class="modal-head" id="mHead" style="background:linear-gradient(135deg,var(--gold),var(--gold2))">
       <h3 id="mTitle">إضافة معلم</h3>
@@ -1231,13 +1236,13 @@ textarea{resize:vertical;min-height:56px;}
       <button class="btn btn-gold" onclick="saveTeacher()">💾 حفظ</button>
     </div>
   </div>
-</div>
+</dialog>
 
 <datalist id="subjectsList"></datalist>
 <div class="toast" id="toast"></div>
 
 <!-- CONTRACT IMPORT MODAL -->
-<div class="modal-ov" id="contractModalOv" onclick="if(event.target===this)closeContractModal()">
+<dialog class="modal-ov" id="contractModalOv" onclick="if(event.target===this)closeContractModal()">
   <div class="modal-box" style="max-width:760px;width:96vw">
     <div class="modal-head" style="background:linear-gradient(135deg,#0e7490,#0891b2)">
       <h3 id="contractModalTitle">📋 استيراد العاملين بالمكافأة</h3>
@@ -1276,7 +1281,7 @@ textarea{resize:vertical;min-height:56px;}
       <button class="btn" style="background:linear-gradient(135deg,#0e7490,#0891b2);color:#fff" onclick="saveContractTeachers()">✅ إضافة المحددين للقائمة</button>
     </div>
   </div>
-</div>
+</dialog>
 
 <script>
 // ═══════════════════════════════════════════
@@ -2408,8 +2413,34 @@ function renderTeachersList(){
 // ═══════════════════════════════════════════
 // MODAL
 // ═══════════════════════════════════════════
-function openModal(){document.getElementById('modalOv').classList.add('open');setTimeout(()=>document.getElementById('fName').focus(),80);}
-function closeModal(){document.getElementById('modalOv').classList.remove('open');}
+// فتح/قفل النوافذ الثابتة (<dialog class="modal-ov">) — Esc بيقفل، التركيز بيرجع للزرار اللي فتحها، والصفحة اللي ورا بتتقفل
+function _dlgSetup(d){
+  if(d._dlgReady)return; d._dlgReady=true;
+  const h=d.querySelector('.modal-head h3');
+  if(h){ if(!h.id)h.id=d.id+'Title'; d.setAttribute('aria-labelledby',h.id); }
+  d.addEventListener('close',()=>{
+    if(!document.querySelector('dialog.modal-ov[open]'))document.documentElement.classList.remove('dlg-lock');
+    const t=document.getElementById('toast'); if(t&&d.contains(t))document.body.appendChild(t); // رجّع الرسالة للصفحة
+    const r=d._dlgReturn; d._dlgReturn=null;
+    if(r&&r.isConnected&&typeof r.focus==='function')r.focus();
+  });
+}
+function dlgOpen(id){
+  const d=document.getElementById(id); if(!d)return;
+  if(typeof d.showModal!=='function'){d.classList.add('open');return;} // متصفح قديم: نفس السلوك القديم
+  _dlgSetup(d);
+  if(d.open)return;
+  d._dlgReturn=document.activeElement;
+  d.showModal();
+  document.documentElement.classList.add('dlg-lock');
+}
+function dlgClose(id){
+  const d=document.getElementById(id); if(!d)return;
+  if(typeof d.showModal!=='function'){d.classList.remove('open');return;}
+  if(d.open)d.close();
+}
+function openModal(){dlgOpen('modalOv');setTimeout(()=>document.getElementById('fName').focus(),80);}
+function closeModal(){dlgClose('modalOv');}
 function toggleLoadInput(){document.getElementById('loadInputWrap').style.display=document.getElementById('fLoadType').value==='fixed'?'block':'none';}
 function populateModalSelects(){
   // القسم الأساسي
@@ -3638,10 +3669,10 @@ function openPrintDeptModal(){
   collectSubjects();
   const sel=document.getElementById('printDeptSel');
   sel.innerHTML=S.departments.map(d=>`<option value="${d}">${d}</option>`).join('');
-  document.getElementById('printDeptModalOv').classList.add('open');
+  dlgOpen('printDeptModalOv');
 }
 function closePrintDeptModal(){
-  document.getElementById('printDeptModalOv').classList.remove('open');
+  dlgClose('printDeptModalOv');
 }
 
 function doPrintDept(){
@@ -4186,9 +4217,9 @@ function openContractImport(){
   const rows=CONTRACT_TEACHERS_RAW.map((t,i)=>({...t,_idx:i,_exists:existing.has(t.name.trim())}));
   window._ctRows=rows;
   _buildContractTable(rows);
-  document.getElementById('contractModalOv').classList.add('open');
+  dlgOpen('contractModalOv');
 }
-function closeContractModal(){document.getElementById('contractModalOv').classList.remove('open');}
+function closeContractModal(){dlgClose('contractModalOv');}
 
 function _buildContractTable(rows){
   const ambigDepts=['الابتدائي انجليزي صغرى','الابتدائي انجليزي عليا'];
@@ -4284,7 +4315,8 @@ function saveContractTeachers(){
 }
 
 // TOAST
-let tTimer;function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tTimer);tTimer=setTimeout(()=>el.classList.remove('show'),3000);}
+let tTimer;function toast(msg){const el=document.getElementById('toast');const host=[...document.querySelectorAll('dialog[open]')].pop()||document.body;if(el.parentNode!==host)host.appendChild(el); // لو فيه نافذة مفتوحة، الرسالة تظهر جواها عشان ماتستخباش ورا الخلفية
+  el.textContent=msg;el.classList.add('show');clearTimeout(tTimer);tTimer=setTimeout(()=>el.classList.remove('show'),3000);}
 
 // ═══════════════════════════════════════════
 // EXCEL IMPORT
@@ -5726,9 +5758,9 @@ function _spoAllSubjects(){ return [...new Set(Object.values(S.subjects).flat().
 function openSubjPrintOrder(){
   collectSubjects();
   _spoRenderList(_orderSubjects(_spoAllSubjects()));
-  document.getElementById('subjPrintOrderOv').classList.add('open');
+  dlgOpen('subjPrintOrderOv');
 }
-function closeSubjPrintOrder(){ document.getElementById('subjPrintOrderOv').classList.remove('open'); }
+function closeSubjPrintOrder(){ dlgClose('subjPrintOrderOv'); }
 function _spoRenderList(names){
   const list=document.getElementById('spoSubjectList');
   const empty=document.getElementById('spoEmpty');
@@ -5796,9 +5828,9 @@ function openSubjectOrder(preselectedDept){
   _soCurrentDept = preselectedDept || S.departments[0] || '';
   _soRenderDeptTabs();
   _soRenderList();
-  document.getElementById('subjectOrderOv').classList.add('open');
+  dlgOpen('subjectOrderOv');
 }
-function closeSubjectOrder(){ document.getElementById('subjectOrderOv').classList.remove('open'); }
+function closeSubjectOrder(){ dlgClose('subjectOrderOv'); }
 
 function applySubjectOrder(){
   // اقرأ الترتيب الحالي من الـ DOM وطبّقه على S.subjects
@@ -6245,10 +6277,10 @@ function renderStaffPage(){
 
 function openAddStaffSectionModal(){
   document.getElementById('newSectionName').value='';
-  document.getElementById('addStaffSectionOv').classList.add('open');
+  dlgOpen('addStaffSectionOv');
 }
 function closeAddStaffSectionModal(){
-  document.getElementById('addStaffSectionOv').classList.remove('open');
+  dlgClose('addStaffSectionOv');
 }
 function saveNewStaffSection(){
   const name=document.getElementById('newSectionName').value.trim();
@@ -6287,10 +6319,10 @@ function openAddStaffMemberModal(preSection){
   document.getElementById('staffMemberModalTitle').textContent='👤 إضافة موظف';
   _populateStaffSectionSelect();
   if(preSection) document.getElementById('smSection').value=preSection;
-  document.getElementById('addStaffMemberOv').classList.add('open');
+  dlgOpen('addStaffMemberOv');
 }
 function closeAddStaffMemberModal(){
-  document.getElementById('addStaffMemberOv').classList.remove('open');
+  dlgClose('addStaffMemberOv');
 }
 function editStaffMember(sec, idx){
   const m=S.staff[sec][idx];
@@ -6302,7 +6334,7 @@ function editStaffMember(sec, idx){
   document.getElementById('staffMemberModalTitle').textContent='✏️ تعديل بيانات الموظف';
   _populateStaffSectionSelect();
   document.getElementById('smSection').value=sec;
-  document.getElementById('addStaffMemberOv').classList.add('open');
+  dlgOpen('addStaffMemberOv');
 }
 function saveStaffMember(){
   const name=document.getElementById('smName').value.trim();
@@ -14918,7 +14950,7 @@ function ttShowSmartSplitModal(dept){
 </script>
 
 <!-- PRINT DEPT MODAL -->
-<div class="modal-ov" id="printDeptModalOv" onclick="if(event.target===this)closePrintDeptModal()">
+<dialog class="modal-ov" id="printDeptModalOv" onclick="if(event.target===this)closePrintDeptModal()">
   <div class="modal-box" style="max-width:420px">
     <div class="modal-head" style="background:linear-gradient(135deg,#6d28d9,#7c3aed)">
       <h3>🖨️ طباعة تقرير قسم</h3>
@@ -14954,7 +14986,7 @@ function ttShowSmartSplitModal(dept){
       <button class="btn" style="background:linear-gradient(135deg,#6d28d9,#7c3aed);color:#fff" onclick="doPrintDept()">🖨️ مفصّل بالمادة</button>
     </div>
   </div>
-</div>
+</dialog>
 
 <!-- Update Banner -->
 
@@ -15089,7 +15121,7 @@ function ttShowSmartSplitModal(dept){
 
 <!-- ══ SUBJECT ORDER MODAL ══ -->
 <!-- ══ Modal ترتيب طباعة المواد (عام لصفحة تجميع المادة) ══ -->
-<div class="modal-ov" id="subjPrintOrderOv" onclick="if(event.target===this)closeSubjPrintOrder()">
+<dialog class="modal-ov" id="subjPrintOrderOv" onclick="if(event.target===this)closeSubjPrintOrder()">
   <div class="modal-box" style="max-width:560px">
     <div class="modal-head" style="background:linear-gradient(135deg,#1a4a6e,#2471a3)">
       <h3>🔃 ترتيب طباعة المواد</h3>
@@ -15111,9 +15143,9 @@ function ttShowSmartSplitModal(dept){
       <button class="btn" style="background:linear-gradient(135deg,#1a4a6e,#2471a3);color:#fff" onclick="applySubjPrintOrder()">💾 حفظ وتطبيق</button>
     </div>
   </div>
-</div>
+</dialog>
 
-<div class="modal-ov" id="subjectOrderOv" onclick="if(event.target===this)closeSubjectOrder()">
+<dialog class="modal-ov" id="subjectOrderOv" onclick="if(event.target===this)closeSubjectOrder()">
   <div class="modal-box" style="max-width:560px">
     <div class="modal-head" style="background:linear-gradient(135deg,#1a4a6e,#2471a3)">
       <h3>🔃 ترتيب المواد قبل التصدير</h3>
@@ -15132,10 +15164,10 @@ function ttShowSmartSplitModal(dept){
       <button class="btn" style="background:linear-gradient(135deg,#1a4a6e,#2471a3);color:#fff" onclick="applySubjectOrder()">💾 حفظ وتطبيق الترتيب</button>
     </div>
   </div>
-</div>
+</dialog>
 
 <!-- ══ Modal إضافة قسم إداري ══ -->
-<div class="modal-ov" id="addStaffSectionOv" onclick="if(event.target===this)closeAddStaffSectionModal()">
+<dialog class="modal-ov" id="addStaffSectionOv" onclick="if(event.target===this)closeAddStaffSectionModal()">
   <div class="modal-box" style="max-width:420px">
     <div class="modal-head" style="background:linear-gradient(135deg,#1a3a5c,#2471a3)">
       <h3>➕ إضافة قسم إداري جديد</h3>
@@ -15151,10 +15183,10 @@ function ttShowSmartSplitModal(dept){
       <button class="btn" style="background:linear-gradient(135deg,#1a3a5c,#2471a3);color:#fff" onclick="saveNewStaffSection()">حفظ القسم</button>
     </div>
   </div>
-</div>
+</dialog>
 
 <!-- ══ Modal إضافة/تعديل موظف ══ -->
-<div class="modal-ov" id="addStaffMemberOv" onclick="if(event.target===this)closeAddStaffMemberModal()">
+<dialog class="modal-ov" id="addStaffMemberOv" onclick="if(event.target===this)closeAddStaffMemberModal()">
   <div class="modal-box" style="max-width:500px">
     <div class="modal-head" style="background:linear-gradient(135deg,#1a3a5c,#2471a3)">
       <h3 id="staffMemberModalTitle">👤 إضافة موظف</h3>
@@ -15183,7 +15215,7 @@ function ttShowSmartSplitModal(dept){
       <button class="btn" style="background:linear-gradient(135deg,#1a3a5c,#2471a3);color:#fff" onclick="saveStaffMember()">💾 حفظ</button>
     </div>
   </div>
-</div>
+</dialog>
 
 </body>
 </html>
