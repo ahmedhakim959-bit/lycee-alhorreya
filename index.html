@@ -478,6 +478,9 @@ textarea{resize:vertical;min-height:56px;}
 .u-close-btn{background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer}
 .u-clickable{cursor:pointer}
 .u-flex-g5-click{display:flex;align-items:center;gap:5px;cursor:pointer;font-size:8.5pt}
+#archiveViewBanner{position:fixed;top:0;left:0;right:0;z-index:9000;background:#fef3c7;color:#78350f;border-bottom:2px solid #d97706;
+  padding:8px 14px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;font-size:.82rem;font-weight:700;}
+@media print{#archiveViewBanner{display:none!important}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -1374,6 +1377,8 @@ let _fsSaveInFlight = false, _fsSavePending = false;
 // لو التحميل من قاعدة البيانات فشل ومفيش نسخة محلية، S بيبقى فاضي/افتراضي — أي حفظ ساعتها
 // هيكتب فوق البيانات الحقيقية في Firestore ويمسحها، فبنوقف الحفظ خالص لحد ما الصفحة تتحدّث
 let _stateLoadFailed = false;
+// وضع عرض الأرشيف: S بيتبدّل مؤقتًا ببيانات أرشيف للاطلاع بس، والبيانات الحالية محفوظة في saved لحد الرجوع
+let _archiveView = null; // {year, saved}
 // Firestore بيرفض أي مستند أكبر من 1 ميجا — نحذّر بدري عند 800 كيلو (مرة واحدة في الجلسة)
 let _stateSizeWarned = false;
 function _checkStateSize(){
@@ -1387,6 +1392,10 @@ function _checkStateSize(){
 
 // ── الحفظ: بيكتب كل حاجة في Firestore (مستند واحد شامل)، وبيحتفظ بنسخة محلية مشفّرة كخط رجعة ──
 function saveState(){
+  if(_archiveView){
+    toast('👁 بتعرض أرشيف — التعديلات هنا مش بتتحفظ. ارجع للسنة الحالية الأول.');
+    return;
+  }
   if(_stateLoadFailed){
     toast('⚠️ البيانات ماتحمّلتش من قاعدة البيانات — التعديل ده مش هيتحفظ. حدّث الصفحة بعد ما النت يرجع.');
     return;
@@ -3154,6 +3163,7 @@ function undoLastImport(){
   location.reload();
 }
 async function backupData(){
+  if(_archiveView){toast('👁 ارجع للسنة الحالية الأول قبل النسخ الاحتياطي');return;}
   saveState();
   let archivesJson=null, archivesFailed=false;
   if(!_stateLoadFailed){
@@ -3195,6 +3205,7 @@ async function backupData(){
   toast(archivesFailed?'⚠️ اتحمّلت النسخة الاحتياطية بس من غير أرشيف قاعدة البيانات (تعذّر الوصول ليه)':'💾 تم تحميل النسخة الاحتياطية الكاملة');
 }
 function restoreData(input){
+  if(_archiveView){toast('👁 ارجع للسنة الحالية الأول قبل الاستعادة');input.value='';return;}
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=e=>{
@@ -3256,6 +3267,21 @@ function restoreData(input){
 
       // ══ نسخة قديمة (S فقط) ══
       if(!p.teachers||!p.departments){toast('❌ ملف غير صالح');return;}
+      // ملف أرشيف (صورة كاملة من البيانات، فيها الجداول وإعدادات بيان العجز) — يترجع كله
+      if('timetableConfig' in p||'budgetNotes' in p||'generatedTimetable' in p){
+        if(!confirm(`استعادة كل بيانات الأرشيف:\n• ${p.teachers.length} معلم\n• ${p.departments.length} قسم\n• الجداول وإعدادات بيان العجز\n\nسيتم استبدال كل البيانات الحالية.\n💡 اعمل نسخة احتياطية الأول لو محتاج ترجع للبيانات الحالية.`))return;
+        const {updatedAt, ...rest}=p;
+        _stateLoadFailed=false;
+        Object.assign(S,rest);
+        S.staffDataVersion=STAFF_DATA_VERSION;
+        saveState(); renderTeacherStats(); renderTeachersList(); buildDashboard();
+        if(typeof initStaffPage==='function') initStaffPage();
+        const btn3=document.querySelector('[onclick="showPage(\'teachers\',this)"]');
+        if(btn3) showPage('teachers',btn3);
+        logChange('restore','استعادة أرشيف كامل',`${p.teachers.length} معلم`);
+        toast('✅ تمت استعادة الأرشيف بالكامل (مع الجداول وإعدادات بيان العجز)');
+        return;
+      }
       if(!confirm(`استعادة بيانات ${p.teachers.length} معلم؟\nسيتم استبدال البيانات الحالية.`))return;
       Object.assign(S,{departments:p.departments,subjects:p.subjects||{},teachers:p.teachers,degrees:p.degrees||S.degrees,staff:p.staff||S.staff});
       S.staffDataVersion=STAFF_DATA_VERSION;
@@ -3368,7 +3394,7 @@ function _renderArchiveSection(){
   all.forEach((ar,i)=>{
     const where=ar.src==='cloud'?'<span class="badge bg-green">☁️ قاعدة البيانات</span>':'<span class="badge bg-gold">📱 الجهاز بس</span>';
     html+=`<tr><td><strong>${ar.year||'—'}</strong></td><td>${ar.teachers||0}</td><td style="font-size:.75rem;color:#888">${ar.date||'—'}</td><td>${where}</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="downloadArchive(${i})">⬇ تحميل</button> <button class="btn btn-del" onclick="deleteArchive(${i})">🗑</button></td></tr>`;
+      <td><button class="btn btn-ghost btn-sm" onclick="viewArchive(${i})">👁 عرض</button> <button class="btn btn-ghost btn-sm" onclick="downloadArchive(${i})">⬇ تحميل</button> <button class="btn btn-del" onclick="deleteArchive(${i})">🗑</button></td></tr>`;
   });
   html+=`</tbody></table></div>`;
   body.innerHTML=html;
@@ -3380,6 +3406,7 @@ function buildArchiveSection(){
     .catch(e=>console.warn('[Archive] load failed:',e));
 }
 async function archiveCurrentYear(){
+  if(_archiveView){toast('👁 ارجع للسنة الحالية الأول قبل الأرشفة');return;}
   if(_stateLoadFailed){toast('⚠️ البيانات ماتحمّلتش — حدّث الصفحة الأول');return;}
   if(!navigator.onLine){toast('📴 الأرشفة محتاجة نت');return;}
   const year=prompt('أدخل العام الدراسي للأرشيف (مثال: 2026/2027):','2026/2027');
@@ -3414,6 +3441,43 @@ async function deleteArchive(i){
     else{ const local=_getLocalArchives(); local.splice(ar.li,1); _setLocalArchives(local); }
     _renderArchiveSection();toast('🗑 تم حذف الأرشيف');
   }catch(e){ toast('❌ تعذّر حذف الأرشيف: '+e.message); }
+}
+// ── عرض أرشيف للاطلاع والطباعة من غير ما يمس بيانات السنة الحالية ──
+function _replaceState(obj){
+  Object.keys(S).forEach(k=>{delete S[k];});
+  Object.assign(S,JSON.parse(JSON.stringify(obj)));
+}
+function _goDashboardClean(){
+  // شبكة المواد في صفحة الإعداد بتتقري تاني في S عند أي تنقل (collectSubjects) — نفضّيها عشان
+  // بيانات السنة اللي كانت معروضة ما تتكتبش فوق السنة التانية
+  const g=document.getElementById('subjectGrid');if(g)g.innerHTML='';
+  showPage('dashboard',document.querySelector('.nav-btn[onclick="showPage(\'dashboard\',this)"]'));
+}
+async function viewArchive(i){
+  const ar=_allArchives()[i];if(!ar)return;
+  let data;
+  try{ data=JSON.parse(ar.src==='cloud'?await _readCloudArchive(ar):ar.data); }
+  catch(e){ toast('❌ تعذّر فتح الأرشيف: '+e.message); return; }
+  if(!data||!Array.isArray(data.teachers)){toast('❌ الأرشيف ده مش فيه بيانات صالحة');return;}
+  if(!_archiveView) _archiveView={saved:JSON.parse(JSON.stringify(S))};
+  _archiveView.year=ar.year||'';
+  _replaceState(_archiveView.saved);
+  delete data.updatedAt;
+  Object.assign(S,data);
+  let bn=document.getElementById('archiveViewBanner');
+  if(!bn){bn=document.createElement('div');bn.id='archiveViewBanner';document.body.appendChild(bn);}
+  bn.innerHTML=`<span>👁 بتعرض أرشيف ${_archiveView.year} — للاطلاع والطباعة بس، أي تعديل مش هيتحفظ</span>
+    <button class="btn btn-sm" style="background:#d97706;color:#fff;border:none" onclick="exitArchiveView()">↩ رجوع للسنة الحالية</button>`;
+  _goDashboardClean();
+  toast(`👁 بتعرض أرشيف ${_archiveView.year}`);
+}
+function exitArchiveView(){
+  if(!_archiveView)return;
+  _replaceState(_archiveView.saved);
+  _archiveView=null;
+  const bn=document.getElementById('archiveViewBanner');if(bn)bn.remove();
+  _goDashboardClean();
+  toast('✅ رجعت لبيانات السنة الحالية');
 }
 // كل الأرشيفات (قاعدة البيانات + الجهاز) بنفس الشكل القديم — عشان تدخل في النسخة الاحتياطية الكاملة
 async function _archivesForBackup(){
