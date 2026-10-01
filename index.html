@@ -331,6 +331,12 @@ textarea{resize:vertical;min-height:56px;}
 .modal-ov{position:fixed;inset:0;background:rgba(13,27,42,.5);z-index:500;
   display:none;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(3px);}
 .modal-ov.open{display:flex;}
+/* النوافذ الثابتة بقت <dialog> وبتتفتح بـ showModal(): المتصفح بيوفر Esc وحبس التركيز وتعطيل الصفحة اللي ورا */
+dialog.modal-ov,dialog.dlg-ov{width:100%;height:100%;max-width:none;max-height:none;margin:0;border:0;color:inherit;overscroll-behavior:contain;}
+dialog.modal-ov[open],dialog.dlg-ov[open]{display:flex;}
+dialog.dlg-ov{padding:0;}
+dialog.modal-ov::backdrop,dialog.dlg-ov::backdrop{background:transparent;}
+html.dlg-lock,html.dlg-lock body{overflow:hidden;}
 .modal-box{background:#fff;border-radius:13px;width:min(550px,100%);max-height:90vh;
   overflow-y:auto;box-shadow:0 18px 55px rgba(0,0,0,.25);animation:mIn .2s ease;}
 @keyframes mIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
@@ -950,62 +956,62 @@ textarea{resize:vertical;min-height:56px;}
 </div>
 
 <!-- ══ مودال تعديل الخلية ══ -->
-<div id="ttFeasibModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:60px;direction:rtl" onclick="if(event.target===this)document.getElementById('ttFeasibModal').style.display='none'">
+<dialog id="ttFeasibModal" class="dlg-ov" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:60px;direction:rtl" onclick="if(event.target===this)dlgClose('ttFeasibModal')">
   <div style="background:#fff;border-radius:12px;width:min(480px,94vw);max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div style="background:#1a3a5c;color:#fff;padding:12px 16px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0">
       <span style="font-weight:700;font-size:10pt">🔍 محلل جدوى الجدول</span>
-      <button onclick="document.getElementById('ttFeasibModal').style.display='none'" class="u-close-btn">✕</button>
+      <button onclick="dlgClose('ttFeasibModal')" class="u-close-btn">✕</button>
     </div>
     <div id="ttFeasibContent" style="padding:12px"></div>
   </div>
-</div>
-<div id="ttAdvisorModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:40px;direction:rtl" onclick="if(event.target===this)document.getElementById('ttAdvisorModal').style.display='none'">
+</dialog>
+<dialog id="ttAdvisorModal" class="dlg-ov" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:40px;direction:rtl" onclick="if(event.target===this)dlgClose('ttAdvisorModal')">
   <div style="background:#fff;border-radius:12px;width:min(560px,95vw);max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div style="background:#065f46;color:#fff;padding:12px 16px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0">
       <span style="font-weight:700;font-size:10pt">🧭 فحص استباقي قبل التوليد</span>
-      <button onclick="document.getElementById('ttAdvisorModal').style.display='none'" class="u-close-btn">✕</button>
+      <button onclick="dlgClose('ttAdvisorModal')" class="u-close-btn">✕</button>
     </div>
     <div id="ttAdvisorContent" style="padding:14px 16px"></div>
   </div>
-</div>
-<div id="ttVerifyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:40px;direction:rtl" onclick="if(event.target===this)document.getElementById('ttVerifyModal').style.display='none'">
+</dialog>
+<dialog id="ttVerifyModal" class="dlg-ov" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:40px;direction:rtl" onclick="if(event.target===this)dlgClose('ttVerifyModal')">
   <div style="background:#fff;border-radius:12px;width:min(560px,95vw);max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div style="background:#4c1d95;color:#fff;padding:12px 16px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0">
       <span style="font-weight:700;font-size:10pt">🧪 تحقق شامل من الجداول المولَّدة</span>
-      <button onclick="document.getElementById('ttVerifyModal').style.display='none'" class="u-close-btn">✕</button>
+      <button onclick="dlgClose('ttVerifyModal')" class="u-close-btn">✕</button>
     </div>
     <div id="ttVerifyContent" style="padding:14px 16px"></div>
   </div>
-</div>
-<div id="ttVersionsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:40px;direction:rtl" onclick="if(event.target===this)document.getElementById('ttVersionsModal').style.display='none'">
+</dialog>
+<dialog id="ttVersionsModal" class="dlg-ov" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:40px;direction:rtl" onclick="if(event.target===this)dlgClose('ttVersionsModal')">
   <div style="background:#fff;border-radius:12px;width:min(520px,95vw);max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div style="background:#b45309;color:#fff;padding:12px 16px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1">
       <span style="font-weight:700;font-size:10pt">🗃️ إصدارات الجدول</span>
-      <button onclick="document.getElementById('ttVersionsModal').style.display='none'" class="u-close-btn">✕</button>
+      <button onclick="dlgClose('ttVersionsModal')" class="u-close-btn">✕</button>
     </div>
     <div style="padding:14px 16px">
       <button onclick="ttSaveVersion()" style="width:100%;padding:9px;background:#b45309;color:#fff;border:none;border-radius:8px;font-family:Cairo,sans-serif;font-size:8.5pt;font-weight:700;cursor:pointer;margin-bottom:12px">💾 احفظ الجدول الحالي كنسخة جديدة</button>
       <div id="ttVersionsContent"></div>
     </div>
   </div>
-</div>
-<div id="ttHeatmapModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:40px;direction:rtl" onclick="if(event.target===this)document.getElementById('ttHeatmapModal').style.display='none'">
+</dialog>
+<dialog id="ttHeatmapModal" class="dlg-ov" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:40px;direction:rtl" onclick="if(event.target===this)dlgClose('ttHeatmapModal')">
   <div style="background:#fff;border-radius:12px;width:min(680px,96vw);max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div style="background:#be123c;color:#fff;padding:12px 16px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1">
       <span style="font-weight:700;font-size:10pt">🔥 خريطة الفجوات الحرارية</span>
-      <button onclick="document.getElementById('ttHeatmapModal').style.display='none'" class="u-close-btn">✕</button>
+      <button onclick="dlgClose('ttHeatmapModal')" class="u-close-btn">✕</button>
     </div>
     <div style="padding:14px 16px">
       <div style="font-size:8pt;color:#666;margin-bottom:10px">عدد الفجوات (حصص فاضية بين أول وآخر حصة) لكل معلم في كل يوم، عبر كل الأقسام — كل ما اللون أغمق كل ما الفجوات أكتر.</div>
       <div id="ttHeatmapContent" style="overflow-x:auto"></div>
     </div>
   </div>
-</div>
-<div id="ttCoverModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:40px;direction:rtl" onclick="if(event.target===this)document.getElementById('ttCoverModal').style.display='none'">
+</dialog>
+<dialog id="ttCoverModal" class="dlg-ov" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:40px;direction:rtl" onclick="if(event.target===this)dlgClose('ttCoverModal')">
   <div style="background:#fff;border-radius:12px;width:min(560px,95vw);max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div style="background:#0f766e;color:#fff;padding:12px 16px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1">
       <span style="font-weight:700;font-size:10pt">🩹 تغطية الغياب</span>
-      <button onclick="document.getElementById('ttCoverModal').style.display='none'" class="u-close-btn">✕</button>
+      <button onclick="dlgClose('ttCoverModal')" class="u-close-btn">✕</button>
     </div>
     <div style="padding:14px 16px">
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
@@ -1024,17 +1030,17 @@ textarea{resize:vertical;min-height:56px;}
       </div>
     </div>
   </div>
-</div>
-<div id="ttBottleneckModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:60px;direction:rtl" onclick="if(event.target===this)document.getElementById('ttBottleneckModal').style.display='none'">
+</dialog>
+<dialog id="ttBottleneckModal" class="dlg-ov" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:60px;direction:rtl" onclick="if(event.target===this)dlgClose('ttBottleneckModal')">
   <div style="background:#fff;border-radius:12px;width:min(480px,94vw);max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div style="background:#7c2d12;color:#fff;padding:12px 16px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0">
       <span style="font-weight:700;font-size:10pt">🎯 نقاط الاختناق</span>
-      <button onclick="document.getElementById('ttBottleneckModal').style.display='none'" class="u-close-btn">✕</button>
+      <button onclick="dlgClose('ttBottleneckModal')" class="u-close-btn">✕</button>
     </div>
     <div id="ttBottleneckContent" style="padding:12px"></div>
   </div>
-</div>
-<div id="ttCellModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;direction:rtl" onclick="if(event.target===this)ttCloseCell()">
+</dialog>
+<dialog id="ttCellModal" class="dlg-ov" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;direction:rtl" onclick="if(event.target===this)ttCloseCell()">
   <div style="background:#fff;border-radius:12px;width:min(360px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden">
     <div style="background:#1a3a5c;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-weight:700;font-size:10pt" id="ttCellTitle">تعديل الحصة</span>
@@ -1058,7 +1064,7 @@ textarea{resize:vertical;min-height:56px;}
       </div>
     </div>
   </div>
-</div>
+</dialog>
 
 <div class="page" id="page-log">
   <div class="card">
@@ -1177,7 +1183,7 @@ textarea{resize:vertical;min-height:56px;}
 </div><!-- /app -->
 
 <!-- MODAL -->
-<div class="modal-ov" id="modalOv" onclick="if(event.target===this)closeModal()">
+<dialog class="modal-ov" id="modalOv" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <div class="modal-head" id="mHead" style="background:linear-gradient(135deg,var(--gold),var(--gold2))">
       <h3 id="mTitle">إضافة معلم</h3>
@@ -1231,13 +1237,13 @@ textarea{resize:vertical;min-height:56px;}
       <button class="btn btn-gold" onclick="saveTeacher()">💾 حفظ</button>
     </div>
   </div>
-</div>
+</dialog>
 
 <datalist id="subjectsList"></datalist>
 <div class="toast" id="toast"></div>
 
 <!-- CONTRACT IMPORT MODAL -->
-<div class="modal-ov" id="contractModalOv" onclick="if(event.target===this)closeContractModal()">
+<dialog class="modal-ov" id="contractModalOv" onclick="if(event.target===this)closeContractModal()">
   <div class="modal-box" style="max-width:760px;width:96vw">
     <div class="modal-head" style="background:linear-gradient(135deg,#0e7490,#0891b2)">
       <h3 id="contractModalTitle">📋 استيراد العاملين بالمكافأة</h3>
@@ -1276,7 +1282,7 @@ textarea{resize:vertical;min-height:56px;}
       <button class="btn" style="background:linear-gradient(135deg,#0e7490,#0891b2);color:#fff" onclick="saveContractTeachers()">✅ إضافة المحددين للقائمة</button>
     </div>
   </div>
-</div>
+</dialog>
 
 <script>
 // ═══════════════════════════════════════════
@@ -2408,8 +2414,47 @@ function renderTeachersList(){
 // ═══════════════════════════════════════════
 // MODAL
 // ═══════════════════════════════════════════
-function openModal(){document.getElementById('modalOv').classList.add('open');setTimeout(()=>document.getElementById('fName').focus(),80);}
-function closeModal(){document.getElementById('modalOv').classList.remove('open');}
+// فتح/قفل النوافذ الثابتة (<dialog class="modal-ov">) — Esc بيقفل، التركيز بيرجع للزرار اللي فتحها، والصفحة اللي ورا بتتقفل
+function _dlgSetup(d){
+  if(d._dlgReady)return; d._dlgReady=true;
+  const h=d.querySelector('.modal-head h3');
+  if(h){ if(!h.id)h.id=d.id+'Title'; d.setAttribute('aria-labelledby',h.id); }
+  d.addEventListener('close',()=>{
+    if(!document.querySelector('dialog.modal-ov[open],dialog.dlg-ov[open]'))document.documentElement.classList.remove('dlg-lock');
+    const t=document.getElementById('toast'); if(t&&d.contains(t))document.body.appendChild(t); // رجّع الرسالة للصفحة
+    const r=d._dlgReturn; d._dlgReturn=null;
+    if(r&&r.isConnected&&typeof r.focus==='function'&&(!document.activeElement||document.activeElement===document.body))r.focus();
+  });
+}
+function dlgOpen(id){
+  const d=document.getElementById(id); if(!d)return;
+  if(typeof d.showModal!=='function'){d.classList.add('open');return;} // متصفح قديم: نفس السلوك القديم
+  _dlgSetup(d);
+  if(d.open)return;
+  d._dlgReturn=document.activeElement;
+  d.showModal();
+  document.documentElement.classList.add('dlg-lock');
+}
+function dlgClose(id){
+  const d=document.getElementById(id); if(!d)return;
+  if(typeof d.showModal!=='function'){d.classList.remove('open');return;}
+  if(d.open)d.close();
+}
+// نافذة بتتعمل بالكود: <dialog> بيتفتح بـ showModal() وبيتشال من الصفحة لما يتقفل (Esc أو ov.remove())
+function dlgMount(d){
+  d.classList.add('dlg-ov');
+  document.body.appendChild(d);
+  if(typeof d.showModal!=='function')return;
+  _dlgSetup(d);
+  const rm=Element.prototype.remove;
+  d.remove=function(){ if(this.open)this.close(); rm.call(this); };
+  d.addEventListener('close',()=>{ if(d.isConnected)rm.call(d); });
+  d._dlgReturn=document.activeElement;
+  d.showModal();
+  document.documentElement.classList.add('dlg-lock');
+}
+function openModal(){dlgOpen('modalOv');setTimeout(()=>document.getElementById('fName').focus(),80);}
+function closeModal(){dlgClose('modalOv');}
 function toggleLoadInput(){document.getElementById('loadInputWrap').style.display=document.getElementById('fLoadType').value==='fixed'?'block':'none';}
 function populateModalSelects(){
   // القسم الأساسي
@@ -3616,14 +3661,14 @@ function showTeacherReport(idx){
     </table></div>`:'<p style="color:#aaa;text-align:center;padding:14px">لا تعيينات</p>'}
   </div>`;
 
-  const ov=document.createElement('div');
+  const ov=document.createElement('dialog');
   ov.className='modal-ov';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
   const box=document.createElement('div');
   box.style.cssText='background:#fff;border-radius:16px;max-width:560px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)';
   box.innerHTML=html;ov.appendChild(box);
   ov.onclick=e=>{if(e.target===ov)ov.remove();};
-  document.body.appendChild(ov);
+  dlgMount(ov);
 }
 
 // ═══════════════════════════════════════════
@@ -3638,10 +3683,10 @@ function openPrintDeptModal(){
   collectSubjects();
   const sel=document.getElementById('printDeptSel');
   sel.innerHTML=S.departments.map(d=>`<option value="${d}">${d}</option>`).join('');
-  document.getElementById('printDeptModalOv').classList.add('open');
+  dlgOpen('printDeptModalOv');
 }
 function closePrintDeptModal(){
-  document.getElementById('printDeptModalOv').classList.remove('open');
+  dlgClose('printDeptModalOv');
 }
 
 function doPrintDept(){
@@ -4186,9 +4231,9 @@ function openContractImport(){
   const rows=CONTRACT_TEACHERS_RAW.map((t,i)=>({...t,_idx:i,_exists:existing.has(t.name.trim())}));
   window._ctRows=rows;
   _buildContractTable(rows);
-  document.getElementById('contractModalOv').classList.add('open');
+  dlgOpen('contractModalOv');
 }
-function closeContractModal(){document.getElementById('contractModalOv').classList.remove('open');}
+function closeContractModal(){dlgClose('contractModalOv');}
 
 function _buildContractTable(rows){
   const ambigDepts=['الابتدائي انجليزي صغرى','الابتدائي انجليزي عليا'];
@@ -4284,7 +4329,8 @@ function saveContractTeachers(){
 }
 
 // TOAST
-let tTimer;function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tTimer);tTimer=setTimeout(()=>el.classList.remove('show'),3000);}
+let tTimer;function toast(msg){const el=document.getElementById('toast');const host=[...document.querySelectorAll('dialog[open]')].pop()||document.body;if(el.parentNode!==host)host.appendChild(el); // لو فيه نافذة مفتوحة، الرسالة تظهر جواها عشان ماتستخباش ورا الخلفية
+  el.textContent=msg;el.classList.add('show');clearTimeout(tTimer);tTimer=setTimeout(()=>el.classList.remove('show'),3000);}
 
 // ═══════════════════════════════════════════
 // EXCEL IMPORT
@@ -5726,9 +5772,9 @@ function _spoAllSubjects(){ return [...new Set(Object.values(S.subjects).flat().
 function openSubjPrintOrder(){
   collectSubjects();
   _spoRenderList(_orderSubjects(_spoAllSubjects()));
-  document.getElementById('subjPrintOrderOv').classList.add('open');
+  dlgOpen('subjPrintOrderOv');
 }
-function closeSubjPrintOrder(){ document.getElementById('subjPrintOrderOv').classList.remove('open'); }
+function closeSubjPrintOrder(){ dlgClose('subjPrintOrderOv'); }
 function _spoRenderList(names){
   const list=document.getElementById('spoSubjectList');
   const empty=document.getElementById('spoEmpty');
@@ -5796,9 +5842,9 @@ function openSubjectOrder(preselectedDept){
   _soCurrentDept = preselectedDept || S.departments[0] || '';
   _soRenderDeptTabs();
   _soRenderList();
-  document.getElementById('subjectOrderOv').classList.add('open');
+  dlgOpen('subjectOrderOv');
 }
-function closeSubjectOrder(){ document.getElementById('subjectOrderOv').classList.remove('open'); }
+function closeSubjectOrder(){ dlgClose('subjectOrderOv'); }
 
 function applySubjectOrder(){
   // اقرأ الترتيب الحالي من الـ DOM وطبّقه على S.subjects
@@ -6245,10 +6291,10 @@ function renderStaffPage(){
 
 function openAddStaffSectionModal(){
   document.getElementById('newSectionName').value='';
-  document.getElementById('addStaffSectionOv').classList.add('open');
+  dlgOpen('addStaffSectionOv');
 }
 function closeAddStaffSectionModal(){
-  document.getElementById('addStaffSectionOv').classList.remove('open');
+  dlgClose('addStaffSectionOv');
 }
 function saveNewStaffSection(){
   const name=document.getElementById('newSectionName').value.trim();
@@ -6287,10 +6333,10 @@ function openAddStaffMemberModal(preSection){
   document.getElementById('staffMemberModalTitle').textContent='👤 إضافة موظف';
   _populateStaffSectionSelect();
   if(preSection) document.getElementById('smSection').value=preSection;
-  document.getElementById('addStaffMemberOv').classList.add('open');
+  dlgOpen('addStaffMemberOv');
 }
 function closeAddStaffMemberModal(){
-  document.getElementById('addStaffMemberOv').classList.remove('open');
+  dlgClose('addStaffMemberOv');
 }
 function editStaffMember(sec, idx){
   const m=S.staff[sec][idx];
@@ -6302,7 +6348,7 @@ function editStaffMember(sec, idx){
   document.getElementById('staffMemberModalTitle').textContent='✏️ تعديل بيانات الموظف';
   _populateStaffSectionSelect();
   document.getElementById('smSection').value=sec;
-  document.getElementById('addStaffMemberOv').classList.add('open');
+  dlgOpen('addStaffMemberOv');
 }
 function saveStaffMember(){
   const name=document.getElementById('smName').value.trim();
@@ -7214,8 +7260,7 @@ function _ensureMergeCfg(){
 
 function openMergeSettings(){
   _ensureMergeCfg();
-  const modal=document.getElementById('mergeCfgModal');
-  modal.style.display='flex';
+  dlgOpen('mergeCfgModal');
   document.getElementById('mergeStageSelect').value='';
   document.getElementById('mergeGroupsList').innerHTML=
     '<p style="color:#9ca3af;font-size:8.5pt;text-align:center;padding:10px">اختر مرحلة لعرض أو إضافة مجموعات الدمج</p>';
@@ -7225,7 +7270,7 @@ function openMergeSettings(){
 }
 
 function closeMergeSettings(){
-  document.getElementById('mergeCfgModal').style.display='none';
+  dlgClose('mergeCfgModal');
 }
 
 function loadMergeStage(){
@@ -7373,10 +7418,10 @@ function openBudgetSortModal(stageKey,stageLabel){
   _bsStageKey=stageKey;
   document.getElementById('budgetSortTitle').textContent='🔃 ترتيب مواد: '+stageLabel;
   _renderBudgetSortList();
-  document.getElementById('budgetSortModal').style.display='flex';
+  dlgOpen('budgetSortModal');
 }
 function closeBudgetSortModal(){
-  document.getElementById('budgetSortModal').style.display='none';
+  dlgClose('budgetSortModal');
 }
 function _renderBudgetSortList(){
   // اجمع المواد من آخر بناء للبيان
@@ -9025,7 +9070,7 @@ function ttOpenCell(el){
   var tsel=document.getElementById('ttCellTeach');
   tsel.innerHTML='<option value="">— بلا معلم —</option>'+(S.teachers||[]).filter(function(t){return !isDeficitTeacher(t);}).map(function(t){return '<option value="'+t.name.replace(/"/g,'&quot;')+'">'+t.name+'</option>';}).join('');
   if(slot&&slot.teacher) tsel.value=slot.teacher;
-  document.getElementById('ttCellModal').style.display='flex';
+  dlgOpen('ttCellModal');
   ttCheckCellConflict();
   ttShowPlacementExplanation(slot);
 }
@@ -9117,7 +9162,7 @@ function ttShowPlacementExplanation(slot){
     +reasons.map(function(r){return '<div style="margin-bottom:3px">'+r+'</div>';}).join('');
   panel.style.display='block';
 }
-function ttCloseCell(){document.getElementById('ttCellModal').style.display='none';}
+function ttCloseCell(){dlgClose('ttCellModal');}
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║  بند 15 من خطة التطوير: خريطة الفجوات الحرارية (Heatmap)      ║
@@ -9189,7 +9234,7 @@ function ttShowHeatmapModal(){
   var r=ttComputeGapHeatmap();
   if(!r.matrix.length){
     content.innerHTML='<p style="color:#aaa;text-align:center;padding:20px">لا توجد جداول متولّدة بعد</p>';
-    document.getElementById('ttHeatmapModal').style.display='flex';
+    dlgOpen('ttHeatmapModal');
     return;
   }
   var html='<table style="border-collapse:collapse;width:100%;font-size:7.5pt">'
@@ -9207,7 +9252,7 @@ function ttShowHeatmapModal(){
   });
   html+='</tbody></table>';
   content.innerHTML=html;
-  document.getElementById('ttHeatmapModal').style.display='flex';
+  dlgOpen('ttHeatmapModal');
 }
 
 // ── بند 2 من خطة التطوير: تحذير لوني وقت التعديل اليدوي — يفحص تعارض المعلم (مدرّس في فصل تاني بنفس الموعد) وقفل المعلم ──
@@ -10487,7 +10532,7 @@ function ttShowVersionsModal(){
     html+='</div>';
     content.innerHTML=html;
   }
-  document.getElementById('ttVersionsModal').style.display='flex';
+  dlgOpen('ttVersionsModal');
 }
 function ttLoadVersion(id){
   var dept=TT.resDept;
@@ -10499,7 +10544,7 @@ function ttLoadVersion(id){
   ttSaveUndo(); // حماية إضافية عبر نظام التراجع العادي
   S.generatedTimetable[dept]=JSON.parse(JSON.stringify(v.data));
   saveState();
-  document.getElementById('ttVersionsModal').style.display='none';
+  dlgClose('ttVersionsModal');
   ttRenderRes();
   toast('✅ اتحمّلت نسخة "'+v.name+'"');
 }
@@ -11386,7 +11431,7 @@ function ttShowFeasibilityModal(){
     html+=r.html;
   });
   content.innerHTML=html||'<p style="color:#aaa;text-align:center;padding:20px">لا توجد أقسام مع توقيتات</p>';
-  document.getElementById('ttFeasibModal').style.display='flex';
+  dlgOpen('ttFeasibModal');
 }
 
 // ── بند 4 من خطة التطوير: تحليل نقاط الاختناق (Bottleneck Analysis) — زرار دائم ──
@@ -11429,7 +11474,7 @@ function ttShowBottleneckModal(){
     html+='</div>';
     content.innerHTML=html;
   }
-  document.getElementById('ttBottleneckModal').style.display='flex';
+  dlgOpen('ttBottleneckModal');
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -11522,7 +11567,7 @@ function ttShowCoverModal(){
   }
   document.getElementById('ttCoverContent').innerHTML='<p style="color:#aaa;text-align:center;padding:16px;font-size:8.5pt">اختر المعلم والتاريخ لعرض الحصص المتأثرة</p>';
   document.getElementById('ttCoverSaveBar').style.display='none';
-  document.getElementById('ttCoverModal').style.display='flex';
+  dlgOpen('ttCoverModal');
 }
 
 function ttCoverSearch(){
@@ -11598,7 +11643,7 @@ function ttCoverSave(){
   });
   saveState();
   toast('✅ اتحفظت خطة التغطية ('+savedCount+' حصة)');
-  document.getElementById('ttCoverModal').style.display='none';
+  dlgClose('ttCoverModal');
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -11703,7 +11748,7 @@ function ttVerify(dept){
 function ttGoToViolation(dept,cid){
   TT.resDept=dept;
   var sel=document.getElementById('ttResDeptSel'); if(sel) sel.value=dept;
-  document.getElementById('ttVerifyModal').style.display='none';
+  dlgClose('ttVerifyModal');
   ttSwitch(4);
 }
 function ttShowVerifyModal(){
@@ -11712,7 +11757,7 @@ function ttShowVerifyModal(){
   if(!content)return;
   if(!depts.length){
     content.innerHTML='<p style="color:#aaa;text-align:center;padding:20px">لسه مفيش جداول متولّدة</p>';
-    document.getElementById('ttVerifyModal').style.display='flex';
+    dlgOpen('ttVerifyModal');
     return;
   }
   var all=[];
@@ -11740,7 +11785,7 @@ function ttShowVerifyModal(){
     html+='</div>';
     content.innerHTML=html;
   }
-  document.getElementById('ttVerifyModal').style.display='flex';
+  dlgOpen('ttVerifyModal');
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -11890,7 +11935,7 @@ function ttShowAdvisorModal(){
     html+='</div>';
     content.innerHTML=html;
   }
-  document.getElementById('ttAdvisorModal').style.display='flex';
+  dlgOpen('ttAdvisorModal');
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -13102,7 +13147,7 @@ function ttSmartExport(dept){
 
   // ── عرض النافذة ──
   var old=document.getElementById('ttExportModal');if(old)old.remove();
-  var ov=document.createElement('div');ov.id='ttExportModal';
+  var ov=document.createElement('dialog');ov.id='ttExportModal';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
   var box=document.createElement('div');
   box.style.cssText='background:#fff;width:100%;max-height:85vh;border-radius:14px 14px 0 0;display:flex;flex-direction:column;font-family:Cairo,sans-serif;direction:rtl;overflow:hidden';
@@ -13170,7 +13215,7 @@ function ttSmartExport(dept){
   cx.onclick=function(){ov.remove();};ftr.appendChild(cx);
   box.appendChild(hdr);box.appendChild(sb);box.appendChild(ta);box.appendChild(ftr);
   ov.appendChild(box);ov.onclick=function(e){if(e.target===ov)ov.remove();};
-  document.body.appendChild(ov);
+  dlgMount(ov);
 }
 
 // ── 2. Smart Fix ──
@@ -13179,7 +13224,7 @@ function ttSmartFix(){
   if(!dept){if(typeof toast==='function')toast('اختر قسماً أولاً');return;}
   var conflicts=ttDetectConflicts(dept);
   var old=document.getElementById('ttFixModal');if(old)old.remove();
-  var ov=document.createElement('div');ov.id='ttFixModal';
+  var ov=document.createElement('dialog');ov.id='ttFixModal';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
   var box=document.createElement('div');
   box.style.cssText='background:#fff;width:100%;max-height:80vh;border-radius:14px 14px 0 0;display:flex;flex-direction:column;font-family:Cairo,sans-serif;direction:rtl;overflow:hidden';
@@ -13210,7 +13255,7 @@ function ttSmartFix(){
   }
   var cx=document.createElement('button');cx.textContent='إغلاق';cx.style.cssText='flex:1;padding:9px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:8px;font-family:Cairo,sans-serif;font-size:9pt;cursor:pointer';cx.onclick=function(){ov.remove();};ftr.appendChild(cx);
   box.appendChild(hdr);box.appendChild(body);box.appendChild(ftr);
-  ov.appendChild(box);ov.onclick=function(e){if(e.target===ov)ov.remove();};document.body.appendChild(ov);
+  ov.appendChild(box);ov.onclick=function(e){if(e.target===ov)ov.remove();};dlgMount(ov);
 }
 
 // ── 3. كشف التعارضات ──
@@ -13450,7 +13495,7 @@ function ttQualityReport(dept){
 
   // ── 3. بناء النافذة ──
   var old = document.getElementById('ttQualModal'); if(old) old.remove();
-  var ov = document.createElement('div');
+  var ov = document.createElement('dialog');
   ov.id = 'ttQualModal';
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
 
@@ -13552,7 +13597,7 @@ function ttQualityReport(dept){
   box.appendChild(body);
   ov.appendChild(box);
   ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
-  document.body.appendChild(ov);
+  dlgMount(ov);
 }
 
 
@@ -14013,7 +14058,7 @@ function ttHandleMoveConflict(srcInfo, dstInfo, conflictInfo){
   var old = document.getElementById('ttConflictModal');
   if(old) old.remove();
 
-  var ov = document.createElement('div');
+  var ov = document.createElement('dialog');
   ov.id = 'ttConflictModal';
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
 
@@ -14076,7 +14121,7 @@ function ttHandleMoveConflict(srcInfo, dstInfo, conflictInfo){
   box.appendChild(hdr2); box.appendChild(body2); box.appendChild(ftr);
   ov.appendChild(box);
   ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
-  document.body.appendChild(ov);
+  dlgMount(ov);
 }
 
 function ttPlaceManual(srcInfo, dstInfo){
@@ -14829,7 +14874,7 @@ function ttShowSmartSplitModal(dept){
   var old = document.getElementById('smartSplitModal');
   if(old) old.remove();
 
-  var ov = document.createElement('div');
+  var ov = document.createElement('dialog');
   ov.id = 'smartSplitModal';
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
 
@@ -14912,13 +14957,13 @@ function ttShowSmartSplitModal(dept){
   box.appendChild(hdr); box.appendChild(body); box.appendChild(ftr);
   ov.appendChild(box);
   ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
-  document.body.appendChild(ov);
+  dlgMount(ov);
 }
 
 </script>
 
 <!-- PRINT DEPT MODAL -->
-<div class="modal-ov" id="printDeptModalOv" onclick="if(event.target===this)closePrintDeptModal()">
+<dialog class="modal-ov" id="printDeptModalOv" onclick="if(event.target===this)closePrintDeptModal()">
   <div class="modal-box" style="max-width:420px">
     <div class="modal-head" style="background:linear-gradient(135deg,#6d28d9,#7c3aed)">
       <h3>🖨️ طباعة تقرير قسم</h3>
@@ -14954,12 +14999,12 @@ function ttShowSmartSplitModal(dept){
       <button class="btn" style="background:linear-gradient(135deg,#6d28d9,#7c3aed);color:#fff" onclick="doPrintDept()">🖨️ مفصّل بالمادة</button>
     </div>
   </div>
-</div>
+</dialog>
 
 <!-- Update Banner -->
 
 <!-- ══ BUDGET MERGE SETTINGS MODAL ══ -->
-<div id="mergeCfgModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;direction:rtl">
+<dialog id="mergeCfgModal" class="dlg-ov" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;direction:rtl">
   <div style="background:#fff;border-radius:10px;width:min(680px,96vw);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div style="background:#1a3a5c;color:#fff;padding:14px 18px;border-radius:10px 10px 0 0;display:flex;justify-content:space-between;align-items:center">
       <span style="font-weight:700;font-size:11pt">⚙️ إعدادات دمج المواد في بيان العجز</span>
@@ -15021,10 +15066,10 @@ function ttShowSmartSplitModal(dept){
       <button onclick="closeMergeSettings()" class="btn btn-ghost">إغلاق</button>
     </div>
   </div>
-</div>
+</dialog>
 
 <!-- ══ BUDGET SUBJECT SORT MODAL ══ -->
-<div id="budgetSortModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;direction:rtl">
+<dialog id="budgetSortModal" class="dlg-ov" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;direction:rtl">
   <div style="background:#fff;border-radius:10px;width:min(460px,94vw);max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div style="background:#1a3a5c;color:#fff;padding:13px 16px;border-radius:10px 10px 0 0;display:flex;justify-content:space-between;align-items:center">
       <span id="budgetSortTitle" style="font-weight:700;font-size:10.5pt">🔃 ترتيب مواد المرحلة</span>
@@ -15042,7 +15087,7 @@ function ttShowSmartSplitModal(dept){
       <button onclick="closeBudgetSortModal()" class="btn btn-ghost btn-sm">إغلاق</button>
     </div>
   </div>
-</div>
+</dialog>
 
 
 <!-- ── مودال تعديل الخلية ── -->
@@ -15089,7 +15134,7 @@ function ttShowSmartSplitModal(dept){
 
 <!-- ══ SUBJECT ORDER MODAL ══ -->
 <!-- ══ Modal ترتيب طباعة المواد (عام لصفحة تجميع المادة) ══ -->
-<div class="modal-ov" id="subjPrintOrderOv" onclick="if(event.target===this)closeSubjPrintOrder()">
+<dialog class="modal-ov" id="subjPrintOrderOv" onclick="if(event.target===this)closeSubjPrintOrder()">
   <div class="modal-box" style="max-width:560px">
     <div class="modal-head" style="background:linear-gradient(135deg,#1a4a6e,#2471a3)">
       <h3>🔃 ترتيب طباعة المواد</h3>
@@ -15111,9 +15156,9 @@ function ttShowSmartSplitModal(dept){
       <button class="btn" style="background:linear-gradient(135deg,#1a4a6e,#2471a3);color:#fff" onclick="applySubjPrintOrder()">💾 حفظ وتطبيق</button>
     </div>
   </div>
-</div>
+</dialog>
 
-<div class="modal-ov" id="subjectOrderOv" onclick="if(event.target===this)closeSubjectOrder()">
+<dialog class="modal-ov" id="subjectOrderOv" onclick="if(event.target===this)closeSubjectOrder()">
   <div class="modal-box" style="max-width:560px">
     <div class="modal-head" style="background:linear-gradient(135deg,#1a4a6e,#2471a3)">
       <h3>🔃 ترتيب المواد قبل التصدير</h3>
@@ -15132,10 +15177,10 @@ function ttShowSmartSplitModal(dept){
       <button class="btn" style="background:linear-gradient(135deg,#1a4a6e,#2471a3);color:#fff" onclick="applySubjectOrder()">💾 حفظ وتطبيق الترتيب</button>
     </div>
   </div>
-</div>
+</dialog>
 
 <!-- ══ Modal إضافة قسم إداري ══ -->
-<div class="modal-ov" id="addStaffSectionOv" onclick="if(event.target===this)closeAddStaffSectionModal()">
+<dialog class="modal-ov" id="addStaffSectionOv" onclick="if(event.target===this)closeAddStaffSectionModal()">
   <div class="modal-box" style="max-width:420px">
     <div class="modal-head" style="background:linear-gradient(135deg,#1a3a5c,#2471a3)">
       <h3>➕ إضافة قسم إداري جديد</h3>
@@ -15151,10 +15196,10 @@ function ttShowSmartSplitModal(dept){
       <button class="btn" style="background:linear-gradient(135deg,#1a3a5c,#2471a3);color:#fff" onclick="saveNewStaffSection()">حفظ القسم</button>
     </div>
   </div>
-</div>
+</dialog>
 
 <!-- ══ Modal إضافة/تعديل موظف ══ -->
-<div class="modal-ov" id="addStaffMemberOv" onclick="if(event.target===this)closeAddStaffMemberModal()">
+<dialog class="modal-ov" id="addStaffMemberOv" onclick="if(event.target===this)closeAddStaffMemberModal()">
   <div class="modal-box" style="max-width:500px">
     <div class="modal-head" style="background:linear-gradient(135deg,#1a3a5c,#2471a3)">
       <h3 id="staffMemberModalTitle">👤 إضافة موظف</h3>
@@ -15183,7 +15228,7 @@ function ttShowSmartSplitModal(dept){
       <button class="btn" style="background:linear-gradient(135deg,#1a3a5c,#2471a3);color:#fff" onclick="saveStaffMember()">💾 حفظ</button>
     </div>
   </div>
-</div>
+</dialog>
 
 </body>
 </html>
